@@ -9,6 +9,7 @@ import { MyDataDisclosure } from '../components/MyDataDisclosure';
 import { OwnerPanel } from '../components/OwnerPanel';
 import { CastButton } from '../components/CastButton';
 import { PipButton } from '../components/PipButton';
+import { QrCode } from '../components/QrCode';
 import { useRoomStream } from '../lib/useRoomStream';
 
 const AUDIO_KEY = 'mugsprite:audio';
@@ -278,6 +279,25 @@ export default function RoomPage() {
                     roomId={roomId}
                     className="bg-accent-green text-ink border-2 border-paper rounded px-3 py-1 font-display text-[10px] tracking-wider inline-flex items-center gap-1.5"
                   />
+                </div>
+                <div className="mt-3 pt-3 border-t border-paper/15 flex items-center gap-3">
+                  <QrCode
+                    value={`${origin}/r/${roomId}/tv`}
+                    size={88}
+                    dark="#fdf6e3"
+                    light="#1a1a1a"
+                    ariaLabel="Scan to open TV view"
+                    className="rounded shrink-0"
+                  />
+                  <div className="text-[10px] leading-snug opacity-80">
+                    <p className="font-display tracking-widest text-accent-yellow mb-1">
+                      SCAN TO OPEN TV VIEW
+                    </p>
+                    <p>
+                      Scan with your phone, then screen-mirror to your TV (AirPlay, Smart View,
+                      Miracast). Or scan directly with a smart-TV remote that supports it.
+                    </p>
+                  </div>
                 </div>
               </header>
               <OwnerPanel
