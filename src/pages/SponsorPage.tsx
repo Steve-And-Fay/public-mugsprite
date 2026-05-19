@@ -94,9 +94,9 @@ export default function SponsorPage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>Logo + tagline live for a full calendar month.</li>
             <li>
-              <strong>Dofollow SEO link.</strong> Sponsor links pass standard HTML link equity —
-              no <code>rel="nofollow"</code>, no <code>rel="sponsored"</code>. Real backlinks
-              from a real domain.
+              <strong>Disclosed paid link for referral traffic.</strong> We mark it{' '}
+              <code>rel="sponsored"</code> per Google's rules — qualified clicks, not
+              laundered link equity.
             </li>
             <li>Click-through tracking (anonymized) reported at month end.</li>
             <li>One shout-out social post when the slot goes live.</li>
@@ -124,7 +124,7 @@ export default function SponsorPage() {
         <Section heading="HOW TO BOOK">
           <p>
             Email <ObfuscatedEmail className="underline" /> with the slot(s) you want. We send an
-            invoice, you wire the payment, the slot goes live within 48 hours. Self-serve
+            invoice, you wire the payment, the slot goes live within a few days. Self-serve
             checkout is a v2 thing.
           </p>
         </Section>
@@ -150,13 +150,30 @@ function SlotCard({ slot }: { slot: SlotConfig }) {
         </span>
       </header>
       <p className="text-sm leading-relaxed opacity-80 mb-2">{slot.description}</p>
-      <p className="text-[12px] opacity-70 mb-4">
+      <p className="text-[12px] opacity-70 mb-3">
         <strong className="font-display tracking-wider text-[10px] mr-1">AUDIENCE:</strong>
         {slot.audience}
       </p>
+      <dl className="text-[12px] opacity-80 mb-4 space-y-1">
+        <SpecRow label="LOGO" value={slot.specs.logo} />
+        <SpecRow label="NAME" value={slot.specs.name} />
+        <SpecRow label="TAGLINE" value={slot.specs.tagline} />
+        {slot.specs.notes && slot.specs.notes.length > 0 && (
+          <div>
+            <dt className="font-display tracking-wider text-[10px] inline mr-1">NOTES:</dt>
+            <dd className="inline">
+              <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                {slot.specs.notes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        )}
+      </dl>
       <div className="border-t-2 border-ink/10 pt-3">
         <p className="font-display text-[9px] tracking-widest opacity-60 mb-2">
-          {paid ? 'CURRENTLY SPONSORED BY' : 'CURRENT FALLBACK'}
+          {paid ? 'CURRENTLY SPONSORED BY' : 'OPEN SLOT — CURRENTLY SHOWING'}
         </p>
         <div className="flex items-center gap-2 text-sm">
           <span className="font-display tracking-wider">{sponsor.name}</span>
@@ -172,6 +189,15 @@ function SlotCard({ slot }: { slot: SlotConfig }) {
         </div>
       </details>
     </article>
+  );
+}
+
+function SpecRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="font-display tracking-wider text-[10px] inline mr-1">{label}:</dt>
+      <dd className="inline">{value}</dd>
+    </div>
   );
 }
 

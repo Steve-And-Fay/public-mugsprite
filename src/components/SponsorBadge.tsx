@@ -6,10 +6,13 @@ interface SponsorBadgeProps {
 }
 
 // Fire-and-forget click tracking. The visible <a> uses the sponsor's direct
-// URL with rel="noopener noreferrer" (no `nofollow` / no `sponsored`) so the
-// link passes SEO equity — a stated sponsor benefit. We ping the tracking
-// endpoint via Beacon (or a non-blocking fetch fallback) so the count is
-// recorded without inserting a 302 redirect in the SEO path.
+// URL. For PAID slots we add rel="sponsored" per Google's Search Essentials
+// (paid placements must be disclosed via rel="sponsored" or rel="nofollow",
+// otherwise the site risks a manual action). The unpaid Internet Crafters
+// fallback is the same entity that runs Mugsprite, so it does NOT need
+// rel="sponsored" — Google's rule covers PAID links, not self-promotion. We
+// ping the tracking endpoint via Beacon (or a non-blocking fetch fallback) so
+// the count is recorded without inserting a 302 redirect in the click path.
 function pingClick(slot: SlotId, target: string) {
   const url = trackedSponsorUrl(target, slot);
   try {
@@ -29,19 +32,24 @@ export function SponsorBadge({ slot }: SponsorBadgeProps) {
   const paid = isPaidSlot(slot);
   const sponsorLink = sponsorPageLink(slot);
   const handleClick = () => pingClick(slot, sponsor.clickUrl);
+  // Disclosure: paid placements must carry rel="sponsored" to comply with
+  // Google Search Essentials. Unpaid fallback (us promoting ourselves) is
+  // exempt — it's a normal editorial link to the same entity.
+  const linkRel = paid ? 'sponsored noopener noreferrer' : 'noopener noreferrer';
 
   if (config.variant === 'hero') {
     return (
       <div className="max-w-xl mx-auto">
         <div className="flex items-center justify-center gap-2 mb-3">
           <span className="font-display text-[10px] tracking-widest opacity-60">
-            {paid ? '★ SPONSORED THIS MONTH BY ★' : '★ POWERED IN PART BY ★'}
+            {paid ? '★ SPONSORED THIS MONTH BY ★' : '★ MADE BY ★'}
           </span>
         </div>
+        {/* eslint-disable-next-line react/jsx-no-target-blank -- linkRel always includes "noopener noreferrer"; see definition above. */}
         <a
           href={sponsor.clickUrl}
           target="_blank"
-          rel="noopener noreferrer"
+          rel={linkRel}
           onClick={handleClick}
           className="block bg-paper border-[3px] border-ink rounded-2xl p-4 sm:p-5 shadow-brutal hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition"
         >
@@ -71,10 +79,11 @@ export function SponsorBadge({ slot }: SponsorBadgeProps) {
   // footer variant: compact inline, sits in Layout footer or other tight rows.
   return (
     <span className="inline-flex items-center gap-2">
+      {/* eslint-disable-next-line react/jsx-no-target-blank -- linkRel always includes "noopener noreferrer"; see definition above. */}
       <a
         href={sponsor.clickUrl}
         target="_blank"
-        rel="noopener noreferrer"
+        rel={linkRel}
         onClick={handleClick}
         className="inline-flex items-center gap-1.5 hover:underline"
         aria-label={`Visit ${sponsor.name}`}

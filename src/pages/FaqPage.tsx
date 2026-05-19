@@ -111,8 +111,11 @@ export default function FaqPage() {
 
         <Item q="Can I keep a room running longer than 7 days?">
           <p>
-            Not today. The 7-day lifetime is fixed for the public beta. If you have a use case
-            for longer-lived rooms, drop us a line at <ObfuscatedEmail className="underline" />.
+            Yes — just ask your agent to extend it by another 7 days. The MCP tool{' '}
+            <code>mugsprite.renew_room</code> pushes the expiry forward and works any time
+            before the room actually expires. You (or the room owner) can also extend from the
+            dashboard. For unusual use cases, drop us a line at{' '}
+            <ObfuscatedEmail className="underline" />.
           </p>
         </Item>
 
@@ -162,8 +165,17 @@ export default function FaqPage() {
 
         <Item q="Where do I report bugs or ask for features?">
           <p>
-            Email <ObfuscatedEmail className="underline" />. Include the room ID if it's about a
-            specific session.
+            Open an issue on{' '}
+            <a
+              href="https://github.com/Steve-And-Fay/public-mugsprite/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              GitHub
+            </a>{' '}
+            (preferred) or email <ObfuscatedEmail className="underline" />. Include the room ID
+            if it's about a specific session.
           </p>
         </Item>
       </div>

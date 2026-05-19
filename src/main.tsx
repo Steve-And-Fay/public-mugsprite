@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
+import { printConsoleBanner } from './lib/consoleBanner';
 import './index.css';
 
 const root = document.getElementById('root');
@@ -17,3 +18,5 @@ createRoot(root).render(
     </HelmetProvider>
   </StrictMode>,
 );
+
+printConsoleBanner();

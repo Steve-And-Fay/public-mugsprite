@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Agent } from '@shared/types';
 import { api } from '../lib/api';
 import { generateAgentName } from '@shared/ids';
@@ -158,6 +158,10 @@ interface InstallPanelProps {
 
 function InstallPanel({ agent, token, origin, onDismiss, headline }: InstallPanelProps) {
   const [copied, setCopied] = useState<CopyKind | null>(null);
+  // When clipboard.writeText is unavailable or blocked (insecure context,
+  // permission denied, document not focused), we surface a readonly textarea
+  // pre-selected so the user can ⌘C / Ctrl+C manually.
+  const [copyFailed, setCopyFailed] = useState<CopyKind | null>(null);
   const [client, setClient] = useState<ClientId>('claude-code');
 
   // Esc closes; lock background scroll while the modal is open.
@@ -176,11 +180,16 @@ function InstallPanel({ agent, token, origin, onDismiss, headline }: InstallPane
 
   const handleCopy = async (which: CopyKind, text: string) => {
     try {
+      if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
+        throw new Error('clipboard unavailable');
+      }
       await navigator.clipboard.writeText(text);
       setCopied(which);
+      setCopyFailed((f) => (f === which ? null : f));
       setTimeout(() => setCopied((c) => (c === which ? null : c)), 1800);
     } catch {
-      /* clipboard blocked */
+      // Clipboard API blocked — show the fallback textarea below the snippet.
+      setCopyFailed(which);
     }
   };
 
@@ -255,6 +264,9 @@ function InstallPanel({ agent, token, origin, onDismiss, headline }: InstallPane
             <pre className="text-[11px] bg-black/40 p-3 rounded overflow-x-auto whitespace-pre-wrap leading-snug">
               {install.snippet}
             </pre>
+            {copyFailed === 'install' && (
+              <CopyFallback text={install.snippet} maxRows={10} />
+            )}
             <p className="text-[10px] opacity-60 mt-1">{install.after}</p>
           </div>
 
@@ -273,6 +285,9 @@ function InstallPanel({ agent, token, origin, onDismiss, headline }: InstallPane
             <pre className="text-[11px] bg-black/40 p-3 rounded overflow-x-auto whitespace-pre-wrap leading-snug max-h-[40vh]">
               {systemPromptSnippet(origin)}
             </pre>
+            {copyFailed === 'system' && (
+              <CopyFallback text={systemPromptSnippet(origin)} maxRows={12} />
+            )}
             <p className="text-[10px] opacity-60 mt-1">
               Paste into your USER-level rules (~/.claude/CLAUDE.md, Cursor global
               rules, ~/.codex/AGENTS.md). The agent picks a per-project persona on
@@ -491,6 +506,40 @@ export function OwnerPanel({
           </ul>
         )}
       </section>
+    </div>
+  );
+}
+
+// Manual-copy fallback. Rendered when navigator.clipboard.writeText is
+// unavailable or refuses (insecure context, focus rules, permission denied,
+// sandboxed iframe). On mount the textarea selects its full contents so the
+// user just needs to press ⌘C / Ctrl+C.
+function CopyFallback({ text, maxRows = 8 }: { text: string; maxRows?: number }) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    const ta = ref.current;
+    if (!ta) return;
+    ta.focus();
+    try {
+      ta.select();
+    } catch {
+      /* selection may be blocked in rare environments — ignore */
+    }
+  }, []);
+  return (
+    <div className="mt-2 border border-accent-yellow/40 bg-accent-yellow/10 rounded p-2">
+      <p className="text-[10px] text-accent-yellow font-display tracking-widest mb-1">
+        ⚠ AUTO-COPY BLOCKED — SELECT BELOW AND PRESS ⌘C / CTRL+C
+      </p>
+      <textarea
+        ref={ref}
+        readOnly
+        value={text}
+        rows={Math.min(maxRows, Math.max(2, text.split('\n').length))}
+        className="w-full text-[11px] bg-black/40 p-2 rounded font-mono leading-snug resize-y"
+        onFocus={(e) => e.target.select()}
+        aria-label="Copy this text manually"
+      />
     </div>
   );
 }

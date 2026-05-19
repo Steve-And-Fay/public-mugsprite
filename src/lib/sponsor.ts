@@ -14,6 +14,16 @@ export interface Sponsor {
 export type SlotId = 'home_hero' | 'room_footer' | 'empty_state' | 'expired_card';
 export type SlotVariant = 'hero' | 'footer';
 
+export interface SlotSpecs {
+  // What a sponsor delivers to fill the slot. These mirror what the slot's
+  // rendering component actually accepts — keep them in sync if SponsorBadge
+  // sizes change.
+  logo: string; // sizing + format guidance
+  name: string; // chars/limits for the brand name line
+  tagline: string; // chars/limits for the tagline line, or 'not shown'
+  notes?: string[]; // restrictions, prohibitions, gotchas
+}
+
 export interface SlotConfig {
   id: SlotId;
   variant: SlotVariant;
@@ -22,8 +32,33 @@ export interface SlotConfig {
   description: string;
   audience: string;
   price: number; // monthly USD
+  specs: SlotSpecs;
   activeSponsor: Sponsor | null;
 }
+
+// Hero variant (home_hero, empty_state, expired_card): card is ~576px wide,
+// logo renders at h-12 (48px) / sm:h-14 (56px), name truncates, tagline wraps.
+const HERO_SPECS: SlotSpecs = {
+  logo: 'Up to 56px tall (48px on mobile). SVG preferred; transparent PNG/WebP also fine. Recommended export: ~140×56 with a small amount of padding so the mark doesn\'t kiss the card edge.',
+  name: 'Up to ~24 characters. Longer names get truncated with an ellipsis on narrow viewports.',
+  tagline: 'Up to ~90 characters. Wraps to two lines max in the card; one tight sentence reads best.',
+  notes: [
+    'No animated GIFs, no video, no scripts — the card is a static link.',
+    'Link is dofollow (no rel="nofollow" / rel="sponsored"). You get SEO equity.',
+    'Click-through opens in a new tab with rel="noopener noreferrer".',
+  ],
+};
+
+// Footer variant (room_footer): inline, single line, 14px-tall logo.
+const FOOTER_SPECS: SlotSpecs = {
+  logo: 'Tiny — renders at 14px tall inline with the brand name. SVG is essentially required; raster logos blur at this size.',
+  name: 'Up to ~16 characters. No truncation, but anything longer pushes the footer line awkwardly.',
+  tagline: 'Not shown in this slot — the footer is brand-only.',
+  notes: [
+    'No animated assets — the footer is one inline line.',
+    'Link is dofollow with rel="noopener noreferrer".',
+  ],
+};
 
 export const FALLBACK: Sponsor = {
   name: 'Internet Crafters',
@@ -40,7 +75,8 @@ export const SLOTS: Record<SlotId, SlotConfig> = {
     description:
       'Bordered sponsor card on the landing page, directly below the primary CTA. Largest type, biggest impressions — every visitor who lands on the site sees this slot before they create a room.',
     audience: 'Every site visitor. Highest top-of-funnel reach.',
-    price: 300,
+    price: 75,
+    specs: HERO_SPECS,
     activeSponsor: null,
   },
   room_footer: {
@@ -49,9 +85,10 @@ export const SLOTS: Record<SlotId, SlotConfig> = {
     label: 'Active Room Footer',
     shortLabel: 'ROOM FOOTER',
     description:
-      'Small persistent footer line on every active room ("Powered by Mugsprite · Sponsored by [you]"). High engagement — the dev keeps the tab open while their agents work.',
+      'Small persistent footer line on every active room ("Made by Mugsprite · Sponsored by [you]"). High engagement — the dev keeps the tab open while their agents work.',
     audience: 'Engaged developers running agents. Long dwell time.',
-    price: 200,
+    price: 50,
+    specs: FOOTER_SPECS,
     activeSponsor: null,
   },
   empty_state: {
@@ -62,7 +99,8 @@ export const SLOTS: Record<SlotId, SlotConfig> = {
     description:
       'Renders inside a freshly created room while the owner is still wiring up agents — exactly when their attention is on the dashboard and they have nothing else to look at.',
     audience: 'New users mid-setup. Focused, dwelling.',
-    price: 100,
+    price: 25,
+    specs: HERO_SPECS,
     activeSponsor: null,
   },
   expired_card: {
@@ -73,7 +111,8 @@ export const SLOTS: Record<SlotId, SlotConfig> = {
     description:
       'The "this room has expired" card every guest hits when their 7-day room ends. Natural decision moment — start a new room, or consider sponsoring.',
     audience: 'Returning users at a natural conversion moment.',
-    price: 150,
+    price: 38,
+    specs: HERO_SPECS,
     activeSponsor: null,
   },
 };

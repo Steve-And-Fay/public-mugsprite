@@ -10,6 +10,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "predev": "rm -rf dist",
     "dev": "netlify dev",
     "dev:vite": "vite",
     "build": "tsc -b && vite build",

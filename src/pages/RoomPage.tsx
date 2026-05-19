@@ -73,6 +73,39 @@ export default function RoomPage() {
   const agentList = useMemo(() => Object.values(state.agents), [state.agents]);
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
+  // Owner toggle is position: fixed at the bottom-right. When the user scrolls
+  // to the bottom, the footer slides under it and the button covers the footer
+  // links. Track how many pixels of the footer are visible above the viewport
+  // bottom, then translate the button up by that amount so it rides above the
+  // footer instead of over it.
+  const [footerOverlap, setFooterOverlap] = useState(0);
+  useEffect(() => {
+    if (!isOwner) return;
+    const footer = document.querySelector('footer');
+    if (!footer) return;
+    let raf = 0;
+    const measure = () => {
+      const rect = footer.getBoundingClientRect();
+      const overlap = Math.max(0, window.innerHeight - rect.top);
+      setFooterOverlap(overlap);
+    };
+    const onScroll = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        measure();
+      });
+    };
+    measure();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, [isOwner]);
+
   // Tick periodically so we re-evaluate room expiration without polling the
   // server. Compares wall clock against the server-provided expires_at (which
   // moves forward on renewal).
@@ -190,7 +223,8 @@ export default function RoomPage() {
               type="button"
               onClick={() => setPanelOpen((o) => !o)}
               aria-label="Toggle owner panel"
-              className="lg:hidden fixed bottom-4 right-4 z-30 bg-ink text-paper border-[3px] border-ink rounded-full px-4 py-2 font-display text-xs tracking-widest shadow-brutal"
+              className="lg:hidden fixed bottom-4 right-4 z-30 bg-ink text-paper border-[3px] border-ink rounded-full px-4 py-2 font-display text-xs tracking-widest shadow-brutal transition-transform"
+              style={{ transform: `translateY(-${footerOverlap}px)` }}
             >
               {panelOpen ? '× CLOSE' : '⚙ OWNER'}
             </button>

@@ -81,7 +81,9 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    # NOTE: Content-Security-Policy lives in public/_headers so it only ships
+    # with the production build. Applying it here would break `netlify dev`,
+    # because Vite injects an inline React Fast Refresh preamble script.
 
 [[headers]]
   for = "/assets/*"

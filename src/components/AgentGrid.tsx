@@ -67,9 +67,6 @@ export function AgentGrid({
             : 'NO AGENTS YET. ADD ONE FROM THE OWNER PANEL.'}
         </p>
         <div className="border-t-2 border-ink/10 pt-6 w-full max-w-md">
-          <p className="font-display text-[10px] tracking-widest text-ink/40 text-center mb-2">
-            WHILE YOU WAIT — A WORD FROM OUR SPONSOR
-          </p>
           <SponsorBadge slot="empty_state" />
         </div>
       </div>
