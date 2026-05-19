@@ -44,10 +44,18 @@ export function AgentGrid({
   isOwner,
 }: AgentGridProps) {
   const tick = useTick(30_000);
+  // Manual dismissals — stores the `updatedAt` value we hid the agent at, so a
+  // fresh update (different updatedAt) automatically un-dismisses them.
+  const [dismissed, setDismissed] = useState<Record<string, string>>({});
+  const dismiss = (id: string, updatedAt: string | undefined) =>
+    setDismissed((prev) => ({ ...prev, [id]: updatedAt ?? '' }));
 
   const visible = useMemo(() => {
     const now = Date.now();
     return agents.filter((a) => {
+      if (dismissed[a.id] !== undefined && dismissed[a.id] === (a.updatedAt ?? '')) {
+        return false;
+      }
       if (a.speakingText) return true;
       if (!a.updatedAt) return true;
       const base = new Date(a.updatedAt).getTime();
@@ -56,7 +64,7 @@ export function AgentGrid({
     });
     // tick is intentionally a dep — drives re-evaluation against current clock.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agents, tick]);
+  }, [agents, tick, dismissed]);
 
   if (visible.length === 0) {
     return (
@@ -86,6 +94,7 @@ export function AgentGrid({
             updatedAt={agent.updatedAt}
             speakingText={agent.speakingText ?? null}
             onSpeechEnd={() => onSpeechEnd(agent.id)}
+            onDismiss={() => dismiss(agent.id, agent.updatedAt)}
             muted={muted}
             volume={volume}
           />
@@ -106,6 +115,7 @@ export function AgentGrid({
           updatedAt={agent.updatedAt}
           speakingText={agent.speakingText ?? null}
           onSpeechEnd={() => onSpeechEnd(agent.id)}
+          onDismiss={() => dismiss(agent.id, agent.updatedAt)}
           muted={muted}
           volume={volume}
         />

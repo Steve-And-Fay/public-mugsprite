@@ -44,7 +44,7 @@ function Footer() {
   return (
     <footer className="border-t-[3px] border-ink bg-paper px-4 py-4 mt-8">
       <div className="max-w-[1600px] mx-auto flex flex-col gap-2">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-3 text-xs">
           <p className="opacity-70 text-center sm:text-left max-w-prose" style={{ textWrap: 'pretty' }}>
             ©{' '}
             <a
@@ -93,12 +93,16 @@ function Footer() {
             <ObfuscatedEmail className="hover:underline" label="CONTACT" />
           </nav>
         </div>
-        <div className="text-center sm:text-right text-[11px] opacity-70">
-          {isPaidSlot('room_footer') ? 'Made by Internet Crafters · Sponsored by ' : 'Made by '}
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-1.5 gap-y-0.5 text-[11px] opacity-70 leading-none">
+          <span>
+            {isPaidSlot('room_footer')
+              ? 'Made by Internet Crafters · Sponsored by'
+              : 'Made by'}
+          </span>
           <SponsorBadge slot="room_footer" />
           {!isPaidSlot('room_footer') && (
             <>
-              {' · '}
+              <span aria-hidden="true">·</span>
               <Link
                 to={sponsorPageLink('room_footer')}
                 className="hover:underline opacity-70"

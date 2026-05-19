@@ -1,7 +1,29 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { MOODS, TALK_MOUTHS, type MoodKey, type MouthStyle } from '@shared/moods';
 import { Accessories, Brows, Eye, Teeth } from './FaceParts';
+import { FaceInkContext, type FaceInk } from './faceInk';
 import { mouthPaths, tonguePath } from './mouthPaths';
+
+// Flip the linework to a light token when the agent picked a dark color, so
+// the eyes/brows/mouth don't disappear into a black-on-black face. `paper`
+// tracks `ink`'s opposite for highlights (pupils, sclera, teeth).
+function inkForBackground(hex: string): FaceInk {
+  const c = (hex || '').replace('#', '');
+  const v = c.length === 3 ? c.split('').map((ch) => ch + ch).join('') : c;
+  if (v.length !== 6 || !/^[0-9a-fA-F]+$/.test(v))
+    return { ink: '#0a0a0a', paper: '#ffffff', isDark: false };
+  const channel = (start: number) => parseInt(v.slice(start, start + 2), 16) / 255;
+  const r = channel(0);
+  const g = channel(2);
+  const b = channel(4);
+  const lin = (x: number) => (x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4));
+  const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  // Only flip on genuinely dark personality colors — saturated mid-tones like
+  // crimson or navy still read fine with the default dark linework.
+  return luminance < 0.12
+    ? { ink: '#fffaeb', paper: '#0a0a0a', isDark: true }
+    : { ink: '#0a0a0a', paper: '#ffffff', isDark: false };
+}
 
 interface FaceProps {
   mood: MoodKey;
@@ -11,6 +33,9 @@ interface FaceProps {
   updatedAt?: string;
   speakingText?: string | null;
   onSpeechEnd?: () => void;
+  // Optional manual-dismiss callback. When provided, a small X button appears
+  // on hover that lets the viewer hide this card until the next update arrives.
+  onDismiss?: () => void;
   voice?: SpeechSynthesisVoice | null;
   pitch?: number;
   rate?: number;
@@ -18,11 +43,14 @@ interface FaceProps {
   volume?: number;
 }
 
-// Staleness shrink: 2% per minute, fully gone at 30 minutes.
-// Activity (mood change, speech) resets updatedAt server-side, so the
-// face pops back to full size whenever an agent reports in.
+// Staleness shrink: 2% per minute, but never below half-size. Faces hold at
+// 50% for hours so a user returning the next morning still finds their grid.
+// Activity (mood change, speech) resets updatedAt server-side, so the face
+// pops back to full size whenever an agent reports in. After 24 hours
+// without activity we drop the face from the grid entirely.
 const SHRINK_PER_MIN = 0.02;
-export const DESPAWN_AFTER_MIN = 30;
+const MIN_SHRINK_SCALE = 0.5;
+export const DESPAWN_AFTER_MIN = 24 * 60;
 
 // Threshold below which the stale badge stays hidden — keeps brand-new faces clean.
 const STALE_BADGE_AFTER_MS = 15_000;
@@ -70,6 +98,7 @@ function FaceImpl({
   updatedAt,
   speakingText,
   onSpeechEnd,
+  onDismiss,
   voice = null,
   pitch = 1.4,
   rate = 1.05,
@@ -81,7 +110,7 @@ function FaceImpl({
   const stalenessPaused = Boolean(speakingText);
   const age = useStalenessAge(updatedAt, stalenessPaused);
   const ageMinutes = speakingText ? 0 : age / 60_000;
-  const shrinkScale = Math.max(0, 1 - SHRINK_PER_MIN * ageMinutes);
+  const shrinkScale = Math.max(MIN_SHRINK_SCALE, 1 - SHRINK_PER_MIN * ageMinutes);
   const moodDef = MOODS[mood];
   const [isTalking, setIsTalking] = useState(false);
   const [talkMouth, setTalkMouth] = useState<MouthStyle | null>(null);
@@ -154,6 +183,7 @@ function FaceImpl({
   }, [speakingText, muted, volume]);
 
   const effectiveMouth: MouthStyle = isTalking && talkMouth ? talkMouth : moodDef.mouth;
+  const faceInk = useMemo(() => inkForBackground(color), [color]);
 
   const timings = useMemo(
     () => ({
@@ -173,7 +203,7 @@ function FaceImpl({
       style={{ transform: `scale(${shrinkScale.toFixed(3)})` }}
     >
       <div
-        className="relative aspect-square w-full rounded-[22px] overflow-hidden border-[3px] border-ink shadow-brutal-lg select-none"
+        className="group relative aspect-square w-full rounded-[22px] overflow-hidden border-[3px] border-ink shadow-brutal-lg select-none"
         style={{ backgroundColor: color }}
       >
         {/* Top sheen — subtle white gradient for depth */}
@@ -195,9 +225,25 @@ function FaceImpl({
           {moodDef.label.toUpperCase()}
         </div>
 
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label={`Hide ${name} from the grid until the next update`}
+            title="Hide until next update"
+            className="absolute top-2 right-2 w-6 h-6 sm:w-7 sm:h-7 grid place-items-center bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[11px] sm:text-xs leading-none shadow-brutal-sm z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition"
+          >
+            ×
+          </button>
+        )}
+
         {age >= STALE_BADGE_AFTER_MS && !speakingText && (
           <div
-            className="absolute top-2.5 right-2.5 px-2 py-0.5 bg-ink/80 text-paper rounded-full font-display text-[8px] sm:text-[9px] tracking-widest z-10"
+            className={`absolute top-2.5 px-2 py-0.5 bg-ink/80 text-paper rounded-full font-display text-[8px] sm:text-[9px] tracking-widest z-10 transition-all duration-150 ${
+              onDismiss
+                ? 'right-2.5 group-hover:right-11 group-focus-within:right-11'
+                : 'right-2.5'
+            }`}
             title={`Last update ${formatRelative(age)} ago`}
           >
             {formatRelative(age)}
@@ -220,6 +266,7 @@ function FaceImpl({
           </div>
         )}
 
+        <FaceInkContext.Provider value={faceInk}>
         <div key={popKey} className="face-pop popping">
           <div className={`face-bob ${isTalking ? 'bobbing' : ''}`}>
             <div
@@ -272,7 +319,7 @@ function FaceImpl({
                   <path
                     className="mouthPath"
                     fill="#0a0a0a"
-                    stroke="#0a0a0a"
+                    stroke={faceInk.ink}
                     strokeWidth={6}
                     strokeLinejoin="round"
                     strokeLinecap="round"
@@ -284,7 +331,7 @@ function FaceImpl({
                   <path
                     className="tongue"
                     fill="#ff4d6d"
-                    stroke="#0a0a0a"
+                    stroke={faceInk.ink}
                     strokeWidth={5}
                     d={tonguePath(effectiveMouth)}
                   />
@@ -293,6 +340,7 @@ function FaceImpl({
             </div>
           </div>
         </div>
+        </FaceInkContext.Provider>
       </div>
       <div
         className="text-center text-[10px] sm:text-[11px] tracking-widest truncate px-1"

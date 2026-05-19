@@ -44,7 +44,6 @@ const HERO_SPECS: SlotSpecs = {
   tagline: 'Up to ~90 characters. Wraps to two lines max in the card; one tight sentence reads best.',
   notes: [
     'No animated GIFs, no video, no scripts — the card is a static link.',
-    'Link is dofollow (no rel="nofollow" / rel="sponsored"). You get SEO equity.',
     'Click-through opens in a new tab with rel="noopener noreferrer".',
   ],
 };

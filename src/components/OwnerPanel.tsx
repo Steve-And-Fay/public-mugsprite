@@ -149,7 +149,10 @@ function systemPromptSnippet(origin: string): string {
 }
 
 interface InstallPanelProps {
-  agent: Agent;
+  // Optional — the install snippet is now the same for every agent in the
+  // room, so the shared "view install" button doesn't have a specific agent
+  // to attach. When omitted, the header just shows the headline.
+  agent?: Agent;
   token: string;
   origin: string;
   onDismiss: () => void;
@@ -211,7 +214,7 @@ function InstallPanel({ agent, token, origin, onDismiss, headline }: InstallPane
             id="install-modal-title"
             className="font-display text-sm sm:text-base tracking-widest text-accent-pink truncate"
           >
-            ▸ {agent.name} — {headline}
+            ▸ {agent ? `${agent.name} — ${headline}` : headline}
           </h2>
           <button
             onClick={onDismiss}
@@ -315,11 +318,10 @@ export function OwnerPanel({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [install, setInstall] = useState<{
-    agent: Agent;
+    agent?: Agent;
     token: string;
     headline: string;
   } | null>(null);
-  const [loadingInstallFor, setLoadingInstallFor] = useState<string | null>(null);
   const [renewing, setRenewing] = useState(false);
 
   const handleRenew = async () => {
@@ -353,27 +355,22 @@ export function OwnerPanel({
     }
   };
 
-  const handleViewInstall = async (agent: Agent) => {
-    setLoadingInstallFor(agent.id);
-    try {
-      const result = await api.getAgentInstall(agent.id, ownerToken);
-      setInstall({
-        agent: result.agent,
-        token: result.agentJoinToken || agentJoinToken,
-        headline: 'install snippet',
-      });
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to load install snippet');
-    } finally {
-      setLoadingInstallFor(null);
-    }
+  // One install snippet covers every agent in the room — it just contains
+  // the room bearer token. The per-agent INSTALL button used to exist when
+  // tokens were per-agent; with the shared-bearer model we surface this once
+  // at the section header instead.
+  const handleShowInstall = () => {
+    setInstall({
+      token: agentJoinToken,
+      headline: 'install snippet',
+    });
   };
 
   const handleDelete = async (agentId: string) => {
     if (!confirm('Remove this agent from the grid? They can re-register with the room bearer at any time.')) return;
     try {
       await api.deleteAgent(agentId, ownerToken);
-      setInstall((cur) => (cur && cur.agent.id === agentId ? null : cur));
+      setInstall((cur) => (cur && cur.agent?.id === agentId ? null : cur));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to remove agent');
     }
@@ -465,9 +462,18 @@ export function OwnerPanel({
       )}
 
       <section className="bg-paper border-[3px] border-ink rounded-2xl p-3 sm:p-4 shadow-brutal">
-        <h2 className="font-display text-[10px] sm:text-xs tracking-widest mb-2 sm:mb-3">
-          ▸ Active agents ({agents.length})
-        </h2>
+        <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
+          <h2 className="font-display text-[10px] sm:text-xs tracking-widest">
+            ▸ Active agents ({agents.length})
+          </h2>
+          <button
+            onClick={handleShowInstall}
+            className="bg-accent-cyan border-2 border-ink rounded px-2.5 py-0.5 font-display text-[10px] tracking-wider shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition"
+            aria-label="View install snippet for this room"
+          >
+            INSTALL
+          </button>
+        </div>
 
         {agents.length === 0 ? (
           <p className="text-xs opacity-60">No agents yet.</p>
@@ -486,14 +492,6 @@ export function OwnerPanel({
                   {a.name}
                 </span>
                 <span className="text-[10px] opacity-60 hidden sm:inline">{a.mood}</span>
-                <button
-                  onClick={() => handleViewInstall(a)}
-                  disabled={loadingInstallFor === a.id}
-                  className="bg-accent-cyan border-2 border-ink rounded px-2 py-0.5 font-display text-[9px] tracking-wider shadow-brutal-sm disabled:opacity-50"
-                  aria-label={`View install snippet for ${a.name}`}
-                >
-                  {loadingInstallFor === a.id ? '…' : 'INSTALL'}
-                </button>
                 <button
                   onClick={() => handleDelete(a.id)}
                   className="font-display text-xs hover:text-red-700"

@@ -95,12 +95,11 @@ export default function SponsorPage() {
             <li>Logo + tagline live for a full calendar month.</li>
             <li>
               <strong>Disclosed paid link for referral traffic.</strong> We mark it{' '}
-              <code>rel="sponsored"</code> per Google's rules — qualified clicks, not
-              laundered link equity.
+              <code>rel="sponsored"</code> per Google's rules.
             </li>
             <li>Click-through tracking (anonymized) reported at month end.</li>
             <li>One shout-out social post when the slot goes live.</li>
-            <li>UTM-tagged outbound link — no shared attribution mystery.</li>
+            <li>UTM-tagged outbound link.</li>
             <li>Early-sponsor rate locks for as long as you stay booked.</li>
           </ul>
           <p className="mt-3 text-[12px] opacity-70">

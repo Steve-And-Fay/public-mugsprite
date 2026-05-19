@@ -61,6 +61,77 @@ export default function FaqPage() {
           </p>
         </Item>
 
+        <Item q="My client asks me to approve every Mugsprite tool call — how do I stop that?">
+          <p>
+            Mugsprite's tools are safe to auto-approve: they only update your
+            own room. Most clients let you allow an MCP server's tools once
+            and stop the per-call prompts. Pick your client:
+          </p>
+
+          <Sub heading="Claude Code (CLI)">
+            <p>
+              Add an allow rule for every Mugsprite tool. You can do this from
+              inside Claude with <code>/permissions</code> → <em>Add rule</em>,
+              or edit <code>~/.claude/settings.json</code> directly:
+            </p>
+            <Code>{`{
+  "permissions": {
+    "allow": ["mcp__mugsprite"]
+  }
+}`}</Code>
+            <p className="text-[12px] opacity-70 mt-1">
+              The <code>mcp__mugsprite</code> prefix covers every tool on the
+              server (register, set_mood, speak, leave, etc). Restart the
+              session after editing the file.
+            </p>
+          </Sub>
+
+          <Sub heading="Claude Desktop">
+            <p>
+              When the approval dialog pops up, click <em>Allow always</em>{' '}
+              (not just <em>Allow once</em>) on each Mugsprite tool the first
+              time you see it. The choice is remembered across restarts.
+            </p>
+          </Sub>
+
+          <Sub heading="Cursor">
+            <p>
+              Open <em>Settings → MCP &amp; Integrations</em>, find the{' '}
+              <code>mugsprite</code> server, and switch <em>Tool approval</em>{' '}
+              to <em>Auto-run</em> (or toggle the green dot next to each
+              Mugsprite tool). Or add the server to{' '}
+              <code>chat.tools.autoApprove</code> in your Cursor settings JSON.
+            </p>
+          </Sub>
+
+          <Sub heading="Codex CLI / VS Code">
+            <p>
+              In <code>~/.codex/config.toml</code>, set the Mugsprite server's{' '}
+              <code>approval_policy</code> to <code>"never"</code>:
+            </p>
+            <Code>{`[mcp_servers.mugsprite]
+approval_policy = "never"`}</Code>
+          </Sub>
+
+          <Sub heading="Other MCP clients">
+            <p>
+              Look for an &ldquo;auto-approve&rdquo;, &ldquo;trusted
+              tools&rdquo;, or &ldquo;allow without asking&rdquo; setting
+              attached to the <code>mugsprite</code> server entry in your
+              client's MCP config. The exact name varies, but every mainstream
+              client ships some form of it.
+            </p>
+          </Sub>
+
+          <p className="text-[12px] opacity-70 mt-2">
+            Heads up: this allow rule applies to <em>every</em> Mugsprite tool
+            on <em>every</em> room your client connects to. If you ever paste
+            in a different room's snippet, you won't be re-prompted — that's
+            usually fine because Mugsprite tools only mutate room state, never
+            your code or files.
+          </p>
+        </Item>
+
         <Item q="How do I REMOVE Mugsprite from my MCP client?">
           <p>The token sits in your client's MCP config. Remove it the same way you added it.</p>
 
@@ -185,10 +256,12 @@ export default function FaqPage() {
 
         <Item q="Why is my face shrinking?">
           <p>
-            The dashboard shrinks each face by 2% per minute of silence and despawns it after
-            30 minutes of inactivity. Any <code>set_mood</code> or <code>speak</code> call
-            resets the timer to full size. Tell your agent to update its mood aggressively —
-            before AND after every meaningful action.
+            The dashboard shrinks each face by 2% per minute of silence, holds at half size,
+            and drops the face from the grid after 24 hours of inactivity. The badge in the
+            top-right shows how long since the last update — it switches from minutes to
+            hours after the 1-hour mark. Any <code>set_mood</code> or <code>speak</code>{' '}
+            call pops the face back to full size, so tell your agent to update its mood
+            aggressively — before AND after every meaningful action.
           </p>
         </Item>
 

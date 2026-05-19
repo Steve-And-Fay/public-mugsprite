@@ -311,6 +311,7 @@ export default function RoomPage() {
                   setRoom((r) => (r ? { ...r, expiresAt } : r));
                 }}
               />
+              <MyDataDisclosure roomId={roomId} ownerToken={ownerToken} />
             </aside>
           </>
         )}
@@ -320,10 +321,6 @@ export default function RoomPage() {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-red-100 border-2 border-red-700 text-red-900 rounded-lg px-4 py-2 text-xs">
           Connection lost. Reload to reconnect.
         </div>
-      )}
-
-      {isOwner && ownerToken && (
-        <MyDataDisclosure roomId={roomId} ownerToken={ownerToken} />
       )}
     </main>
     </>

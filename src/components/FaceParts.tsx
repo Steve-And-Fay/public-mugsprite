@@ -1,4 +1,5 @@
 import type { BrowStyle, EyeStyle, MoodKey, MouthStyle } from '@shared/moods';
+import { useFaceInk } from './faceInk';
 
 // React/JSX SVG primitives for every facial feature. Rendering these as real
 // React children (rather than parsed string fragments) lets the SMIL <animate>
@@ -12,15 +13,20 @@ interface EyeProps {
 }
 
 export function Eye({ style, cx, cy, isLeft }: EyeProps) {
+  const { ink, paper, isDark } = useFaceInk();
+  // Decorative shadows under closed-eye arcs are 8% ink on light faces. On
+  // dark faces that's a near-invisible cream wash, so raise the opacity to
+  // create a soft glow with comparable visual weight.
+  const haloOpacity = isDark ? 0.22 : 0.08;
   switch (style) {
     case 'happy':
       return (
         <>
           {/* Soft eye-socket shadow so the arc has visual weight even when curled up */}
-          <ellipse cx={cx} cy={cy + 5} rx={75} ry={45} fill="#0a0a0a" opacity={0.08} />
+          <ellipse cx={cx} cy={cy + 5} rx={75} ry={45} fill={ink} opacity={haloOpacity} />
           <path
             d={`M ${cx - 80} ${cy + 25} Q ${cx} ${cy - 80} ${cx + 80} ${cy + 25}`}
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={32}
             strokeLinecap="round"
             fill="none"
@@ -38,8 +44,8 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
     case 'sad':
       return (
         <>
-          <ellipse cx={cx} cy={cy + 5} rx={58} ry={72} fill="#0a0a0a" />
-          <ellipse cx={cx - 12} cy={cy + 28} rx={13} ry={16} fill="white" />
+          <ellipse cx={cx} cy={cy + 5} rx={58} ry={72} fill={ink} />
+          <ellipse cx={cx - 12} cy={cy + 28} rx={13} ry={16} fill={paper} />
           <path
             d={`M ${cx + 30} ${cy + 60} Q ${cx + 25} ${cy + 110} ${cx + 50} ${cy + 130}`}
             stroke="#5599DD"
@@ -55,21 +61,21 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
     case 'wide':
       return (
         <>
-          <circle cx={cx} cy={cy} r={78} fill="white" stroke="#0a0a0a" strokeWidth={7} />
-          <circle cx={cx} cy={cy} r={32} fill="#0a0a0a">
+          <circle cx={cx} cy={cy} r={78} fill={paper} stroke={ink} strokeWidth={7} />
+          <circle cx={cx} cy={cy} r={32} fill={ink}>
             <animate attributeName="r" values="32;28;32" dur="0.6s" repeatCount="indefinite" />
           </circle>
-          <circle cx={cx + 8} cy={cy - 10} r={6} fill="white" />
+          <circle cx={cx + 8} cy={cy - 10} r={6} fill={paper} />
         </>
       );
 
     case 'closed':
       return (
         <>
-          <ellipse cx={cx} cy={cy + 10} rx={78} ry={42} fill="#0a0a0a" opacity={0.08} />
+          <ellipse cx={cx} cy={cy + 10} rx={78} ry={42} fill={ink} opacity={haloOpacity} />
           <path
             d={`M ${cx - 78} ${cy} Q ${cx} ${cy + 45} ${cx + 78} ${cy}`}
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={30}
             strokeLinecap="round"
             fill="none"
@@ -87,8 +93,8 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
     case 'lookUp':
       return (
         <>
-          <ellipse cx={cx} cy={cy} rx={62} ry={82} fill="#0a0a0a" />
-          <ellipse cx={cx + 12} cy={cy - 52} rx={16} ry={20} fill="white">
+          <ellipse cx={cx} cy={cy} rx={62} ry={82} fill={ink} />
+          <ellipse cx={cx + 12} cy={cy - 52} rx={16} ry={20} fill={paper}>
             <animate
               attributeName="cx"
               values={`${cx + 12};${cx - 12};${cx + 12}`}
@@ -102,8 +108,8 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
     case 'narrow':
       return (
         <>
-          <ellipse cx={cx} cy={cy + 10} rx={68} ry={28} fill="#0a0a0a" />
-          <ellipse cx={cx + 18} cy={cy + 5} rx={11} ry={13} fill="white">
+          <ellipse cx={cx} cy={cy + 10} rx={68} ry={28} fill={ink} />
+          <ellipse cx={cx + 18} cy={cy + 5} rx={11} ry={13} fill={paper}>
             <animate
               attributeName="cx"
               values={`${cx + 18};${cx - 18};${cx + 18}`}
@@ -122,11 +128,11 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
       const r = 18;
       return (
         <>
-          <ellipse cx={cx} cy={cy} rx={62} ry={82} fill="#0a0a0a" />
+          <ellipse cx={cx} cy={cy} rx={62} ry={82} fill={ink} />
           <g style={{ transformOrigin: `${sx}px ${sy}px` }}>
             <path
               d={`M ${sx} ${sy - r} L ${sx + r * 0.32} ${sy - r * 0.32} L ${sx + r} ${sy} L ${sx + r * 0.32} ${sy + r * 0.32} L ${sx} ${sy + r} L ${sx - r * 0.32} ${sy + r * 0.32} L ${sx - r} ${sy} L ${sx - r * 0.32} ${sy - r * 0.32} Z`}
-              fill="white"
+              fill={paper}
             >
               <animateTransform
                 attributeName="transform"
@@ -138,7 +144,7 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
               />
             </path>
           </g>
-          <circle cx={cx + 18} cy={cy + 20} r={5} fill="white" opacity={0.85} />
+          <circle cx={cx + 18} cy={cy + 20} r={5} fill={paper} opacity={0.85} />
         </>
       );
     }
@@ -151,7 +157,7 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
       const pupilDy = isLeft ? 22 : 14;
       return (
         <>
-          <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="#0a0a0a">
+          <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={ink}>
             <animate
               attributeName="rx"
               values={`${rx};${rx - 8};${rx}`}
@@ -164,7 +170,7 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
             cy={cy - pupilDy}
             rx={pupilRx}
             ry={pupilRy}
-            fill="white"
+            fill={paper}
           />
         </>
       );
@@ -174,8 +180,8 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
       const offset = isLeft ? 28 : -28;
       return (
         <>
-          <ellipse cx={cx} cy={cy} rx={62} ry={82} fill="#0a0a0a" />
-          <ellipse cx={cx + offset} cy={cy - 8} rx={16} ry={22} fill="white">
+          <ellipse cx={cx} cy={cy} rx={62} ry={82} fill={ink} />
+          <ellipse cx={cx + offset} cy={cy - 8} rx={16} ry={22} fill={paper}>
             <animate
               attributeName="cy"
               values={`${cy - 8};${cy - 22};${cy - 8}`}
@@ -195,7 +201,7 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
             y1={cy - 55}
             x2={cx + 55}
             y2={cy + 55}
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={24}
             strokeLinecap="round"
           />
@@ -204,7 +210,7 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
             y1={cy + 55}
             x2={cx + 55}
             y2={cy - 55}
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={24}
             strokeLinecap="round"
           />
@@ -215,8 +221,8 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
     default:
       return (
         <>
-          <ellipse cx={cx} cy={cy} rx={62} ry={82} fill="#0a0a0a" />
-          <ellipse cx={cx + 14} cy={cy - 22} rx={16} ry={22} fill="white">
+          <ellipse cx={cx} cy={cy} rx={62} ry={82} fill={ink} />
+          <ellipse cx={cx + 14} cy={cy - 22} rx={16} ry={22} fill={paper}>
             <animate
               attributeName="cx"
               values={`${cx + 14};${cx - 4};${cx + 16};${cx + 14}`}
@@ -230,27 +236,28 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
               repeatCount="indefinite"
             />
           </ellipse>
-          <ellipse cx={cx + 8} cy={cy - 26} rx={6} ry={9} fill="white" opacity={0.8} />
+          <ellipse cx={cx + 8} cy={cy - 26} rx={6} ry={9} fill={paper} opacity={0.8} />
         </>
       );
   }
 }
 
 export function Brows({ style }: { style: BrowStyle }) {
+  const { ink } = useFaceInk();
   switch (style) {
     case 'sad':
       return (
         <>
           <path
             d="M 250 290 Q 320 245 390 280"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={20}
             strokeLinecap="round"
             fill="none"
           />
           <path
             d="M 610 280 Q 680 245 750 290"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={20}
             strokeLinecap="round"
             fill="none"
@@ -262,7 +269,7 @@ export function Brows({ style }: { style: BrowStyle }) {
         <>
           <path
             d="M 250 230 Q 320 195 390 230"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={20}
             strokeLinecap="round"
             fill="none"
@@ -276,7 +283,7 @@ export function Brows({ style }: { style: BrowStyle }) {
           </path>
           <path
             d="M 610 230 Q 680 195 750 230"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={20}
             strokeLinecap="round"
             fill="none"
@@ -293,7 +300,7 @@ export function Brows({ style }: { style: BrowStyle }) {
     case 'angry':
       return (
         <>
-          <path d="M 250 240 L 390 295" stroke="#0a0a0a" strokeWidth={24} strokeLinecap="round">
+          <path d="M 250 240 L 390 295" stroke={ink} strokeWidth={24} strokeLinecap="round">
             <animate
               attributeName="d"
               values="M 250 240 L 390 295;M 250 250 L 390 285;M 250 240 L 390 295"
@@ -301,7 +308,7 @@ export function Brows({ style }: { style: BrowStyle }) {
               repeatCount="indefinite"
             />
           </path>
-          <path d="M 610 295 L 750 240" stroke="#0a0a0a" strokeWidth={24} strokeLinecap="round">
+          <path d="M 610 295 L 750 240" stroke={ink} strokeWidth={24} strokeLinecap="round">
             <animate
               attributeName="d"
               values="M 610 295 L 750 240;M 610 285 L 750 250;M 610 295 L 750 240"
@@ -316,14 +323,14 @@ export function Brows({ style }: { style: BrowStyle }) {
         <>
           <path
             d="M 250 275 Q 320 265 390 270"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={20}
             strokeLinecap="round"
             fill="none"
           />
           <path
             d="M 610 245 Q 680 210 750 235"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={20}
             strokeLinecap="round"
             fill="none"
@@ -342,7 +349,7 @@ export function Brows({ style }: { style: BrowStyle }) {
         <>
           <path
             d="M 250 245 Q 320 215 390 250"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={20}
             strokeLinecap="round"
             fill="none"
@@ -356,7 +363,7 @@ export function Brows({ style }: { style: BrowStyle }) {
           </path>
           <path
             d="M 610 285 Q 680 280 750 280"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={20}
             strokeLinecap="round"
             fill="none"
@@ -377,9 +384,13 @@ export function Brows({ style }: { style: BrowStyle }) {
 }
 
 export function Accessories({ mood }: { mood: MoodKey }) {
+  const { ink } = useFaceInk();
   const bungee = 'Bungee, sans-serif';
   switch (mood) {
     case 'sleepy':
+      // Floating Z's are always cream — they're ambient decorations, not part
+      // of the face's contrast pair. On a dark agent the cream pops; on a
+      // saturated mid-tone agent the cream reads as a soft warm halo.
       return (
         <>
           <text
@@ -388,7 +399,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             y={220}
             fontFamily={bungee}
             fontSize={90}
-            fill="#fdf6e3"
+            fill={ink}
             style={{ animationDelay: '0s' }}
           >
             z
@@ -399,7 +410,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             y={220}
             fontFamily={bungee}
             fontSize={70}
-            fill="#fdf6e3"
+            fill={ink}
             style={{ animationDelay: '0.9s' }}
           >
             z
@@ -410,7 +421,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             y={220}
             fontFamily={bungee}
             fontSize={55}
-            fill="#fdf6e3"
+            fill={ink}
             style={{ animationDelay: '1.7s' }}
           >
             z
@@ -425,8 +436,8 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             cx={780}
             cy={210}
             r={16}
-            fill="white"
-            stroke="#0a0a0a"
+            fill="#fdf6e3"
+            stroke={ink}
             strokeWidth={4}
             style={{ transformOrigin: '780px 210px', animationDelay: '0s' }}
           />
@@ -435,8 +446,8 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             cx={835}
             cy={165}
             r={12}
-            fill="white"
-            stroke="#0a0a0a"
+            fill="#fdf6e3"
+            stroke={ink}
             strokeWidth={4}
             style={{ transformOrigin: '835px 165px', animationDelay: '0.3s' }}
           />
@@ -445,8 +456,8 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             cx={878}
             cy={125}
             r={9}
-            fill="white"
-            stroke="#0a0a0a"
+            fill="#fdf6e3"
+            stroke={ink}
             strokeWidth={3}
             style={{ transformOrigin: '878px 125px', animationDelay: '0.6s' }}
           />
@@ -459,7 +470,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             className="acc anim-star"
             d="M 150 220 m 0 -45 l 13 31 l 34 0 l -27 21 l 10 33 l -30 -18 l -30 18 l 10 -33 l -27 -21 l 34 0 Z"
             fill="#FFE600"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={5}
             style={{ transformOrigin: '150px 220px' }}
           />
@@ -467,7 +478,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             className="acc anim-star"
             d="M 850 180 m 0 -38 l 11 26 l 29 0 l -23 18 l 8 28 l -25 -15 l -25 15 l 8 -28 l -23 -18 l 29 0 Z"
             fill="#FFE600"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={5}
             style={{ transformOrigin: '850px 180px', animationDelay: '0.3s' }}
           />
@@ -475,7 +486,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             className="acc anim-star"
             d="M 130 780 m 0 -32 l 9 22 l 24 0 l -19 15 l 7 24 l -21 -13 l -21 13 l 7 -24 l -19 -15 l 24 0 Z"
             fill="#FFE600"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={4}
             style={{ transformOrigin: '130px 780px', animationDelay: '0.6s' }}
           />
@@ -490,7 +501,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             y={250}
             fontFamily={bungee}
             fontSize={74}
-            fill="#0a0a0a"
+            fill={ink}
             style={{ animationDelay: '0s' }}
           >
             ♪
@@ -501,7 +512,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             y={240}
             fontFamily={bungee}
             fontSize={92}
-            fill="#0a0a0a"
+            fill={ink}
             style={{ animationDelay: '0.9s' }}
           >
             ♫
@@ -512,7 +523,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             y={780}
             fontFamily={bungee}
             fontSize={58}
-            fill="#0a0a0a"
+            fill={ink}
             style={{ animationDelay: '1.6s' }}
           >
             ♪
@@ -543,6 +554,8 @@ export function Accessories({ mood }: { mood: MoodKey }) {
         </>
       );
     case 'error':
+      // Same logic as the sleepy Z's — always cream so they read as warning
+      // bursts regardless of face color.
       return (
         <>
           <text
@@ -551,7 +564,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             y={240}
             fontFamily={bungee}
             fontSize={80}
-            fill="#fdf6e3"
+            fill={ink}
             style={{ transformOrigin: '140px 220px' }}
           >
             !
@@ -562,7 +575,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             y={240}
             fontFamily={bungee}
             fontSize={80}
-            fill="#fdf6e3"
+            fill={ink}
             style={{ transformOrigin: '840px 220px', animationDelay: '0.17s' }}
           >
             !
@@ -577,7 +590,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
           y={240}
           fontFamily={bungee}
           fontSize={110}
-          fill="#0a0a0a"
+          fill={ink}
           style={{ transformOrigin: '825px 215px' }}
         >
           !
@@ -592,7 +605,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
           fontFamily={bungee}
           fontSize={100}
           fill="#fdf6e3"
-          stroke="#0a0a0a"
+          stroke={ink}
           strokeWidth={3}
           style={{ transformOrigin: '830px 205px' }}
         >
@@ -606,7 +619,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             className="acc anim-puff"
             d="M 140 200 Q 200 150 180 220"
             fill="none"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={6}
             strokeLinecap="round"
             style={{ transformOrigin: '170px 190px' }}
@@ -615,7 +628,7 @@ export function Accessories({ mood }: { mood: MoodKey }) {
             className="acc anim-puff"
             d="M 860 200 Q 800 150 820 220"
             fill="none"
-            stroke="#0a0a0a"
+            stroke={ink}
             strokeWidth={6}
             strokeLinecap="round"
             style={{ transformOrigin: '830px 190px', animationDelay: '0.2s' }}
@@ -628,7 +641,11 @@ export function Accessories({ mood }: { mood: MoodKey }) {
 }
 
 export function Teeth({ mouth }: { mouth: MouthStyle }) {
-  const show: MouthStyle[] = ['bigSmile', 'singO', 'talk_a', 'talk_e', 'tongueOut'];
+  const { ink } = useFaceInk();
+  // bigSmile / talk_a / talk_e have a wide enough opening that the rectangular
+  // teeth row reads as teeth-inside-mouth. singO and tongueOut don't — the O
+  // is too narrow vertically, and tongueOut is dominated by the tongue itself.
+  const show: MouthStyle[] = ['bigSmile', 'talk_a', 'talk_e'];
   if (!show.includes(mouth)) return null;
   const cols = 5;
   const startX = 310;
@@ -636,6 +653,8 @@ export function Teeth({ mouth }: { mouth: MouthStyle }) {
   const y = 685;
   const h = 38;
   const w = (endX - startX) / cols;
+  // Teeth are real white objects inside the mouth — they don't invert with
+  // the personality color. Stroke flips so the gaps stay visible on dark faces.
   return (
     <>
       {Array.from({ length: cols }).map((_, i) => (
@@ -645,8 +664,8 @@ export function Teeth({ mouth }: { mouth: MouthStyle }) {
           y={y}
           width={w - 6}
           height={h}
-          fill="white"
-          stroke="#0a0a0a"
+          fill="#fdf6e3"
+          stroke={ink}
           strokeWidth={3}
           rx={2}
         />
