@@ -85,7 +85,7 @@ export function CastButton({ roomId, className }: CastButtonProps) {
   if (requestRef.current && available) {
     return (
       <button type="button" onClick={handleCast} className={cls} aria-label="Cast room to TV">
-        <span aria-hidden="true">📺</span> CAST TO TV
+        <span aria-hidden="true">📺</span> TV CAST
       </button>
     );
   }
@@ -101,7 +101,7 @@ export function CastButton({ roomId, className }: CastButtonProps) {
       className={cls}
       aria-label="Open TV view in new tab"
     >
-      <span aria-hidden="true">📺</span> OPEN TV VIEW
+      <span aria-hidden="true">📺</span> TV VIEW
     </a>
   );
 }

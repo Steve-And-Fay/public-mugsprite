@@ -134,11 +134,16 @@ export function TermsPage() {
           identify individual viewers.
         </p>
         <p>
-          <strong>Link attribution.</strong> Sponsor links from the Service follow standard
-          HTML anchor semantics and are not marked with the <code>rel="nofollow"</code> or
-          <code>rel="sponsored"</code> attributes; this is offered as a deliberate sponsor
-          benefit and may be revised in the Company's discretion to comply with search-engine
-          guidelines or applicable advertising regulations.
+          <strong>Link attribution.</strong> Paid sponsor links from the Service are marked
+          with <code>rel="sponsored"</code> in accordance with the Google Search Essentials
+          guidance for paid placements. This disclosure means a sponsor placement is not
+          intended to convey unmoderated PageRank signal; it is a referral-traffic placement
+          first, with any search-engine signal allocated at the search engine's discretion.
+          Unpaid, editorial links to the Company's own brands (including the Internet
+          Crafters fallback shown when a slot is unsold) are not paid placements and
+          accordingly are not marked <code>rel="sponsored"</code>. The Company may revise
+          these attributes in its discretion to keep pace with search-engine guidelines or
+          applicable advertising regulations.
         </p>
       </Section>
       <Section heading="7. Disclaimers">

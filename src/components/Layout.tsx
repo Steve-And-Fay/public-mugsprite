@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ObfuscatedEmail } from './ObfuscatedEmail';
 import { SponsorBadge } from './SponsorBadge';
-import { isPaidSlot } from '../lib/sponsor';
+import { isPaidSlot, SLOTS, sponsorPageLink } from '../lib/sponsor';
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
@@ -96,6 +96,18 @@ function Footer() {
         <div className="text-center sm:text-right text-[11px] opacity-70">
           {isPaidSlot('room_footer') ? 'Made by Internet Crafters · Sponsored by ' : 'Made by '}
           <SponsorBadge slot="room_footer" />
+          {!isPaidSlot('room_footer') && (
+            <>
+              {' · '}
+              <Link
+                to={sponsorPageLink('room_footer')}
+                className="hover:underline opacity-70"
+                aria-label={`Sponsor this slot for $${SLOTS.room_footer.price} per month`}
+              >
+                sponsor this slot (${SLOTS.room_footer.price}/mo) →
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </footer>

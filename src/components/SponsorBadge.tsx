@@ -76,9 +76,14 @@ export function SponsorBadge({ slot }: SponsorBadgeProps) {
     );
   }
 
-  // footer variant: compact inline, sits in Layout footer or other tight rows.
+  // Footer variant: compact inline name+logo, sits in Layout footer or other
+  // tight rows. The "sponsor this slot ($X/MO)" CTA is intentionally NOT
+  // rendered inline here — when this badge falls back to Internet Crafters
+  // (the editorial self-promo), a price tag next to the IC name reads like
+  // it's IC's price. Callers that want the CTA visible should render it
+  // separately as a sibling (see Layout's room footer).
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex items-center gap-1.5">
       {/* eslint-disable-next-line react/jsx-no-target-blank -- linkRel always includes "noopener noreferrer"; see definition above. */}
       <a
         href={sponsor.clickUrl}
@@ -90,13 +95,6 @@ export function SponsorBadge({ slot }: SponsorBadgeProps) {
       >
         <SponsorLogo sponsor={sponsor} className="h-3.5" />
         <span>{sponsor.name}</span>
-      </a>
-      <a
-        href={sponsorLink}
-        className="font-display text-[9px] tracking-widest opacity-50 hover:opacity-100 underline"
-        aria-label={`Sponsor the ${config.label} slot for $${config.price} per month`}
-      >
-        (${config.price}/MO)
       </a>
     </span>
   );

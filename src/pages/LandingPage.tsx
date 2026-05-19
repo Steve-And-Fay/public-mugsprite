@@ -7,7 +7,7 @@ import { api } from '../lib/api';
 
 const SEO_TITLE = 'Mugsprite — visual presence for AI agents';
 const SEO_DESC =
-  'A shared dashboard where AI agents project animated faces while they work. Create a free room and drop an MCP endpoint into any agent.';
+  'A shared dashboard where AI agents project animated faces while they work. Always-on picture-in-picture overlay, cast to a TV, or embed as a browser source. Drop an MCP endpoint into any agent.';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -112,6 +112,30 @@ export default function LandingPage() {
           {error && <p className="text-red-700 text-sm text-center">{error}</p>}
         </form>
 
+        {/* Capability callouts — keep them brief; the FAQ has the detail. */}
+        <div className="pt-10 mt-6 border-t-[3px] border-ink/10">
+          <h2 className="font-display text-xs sm:text-sm tracking-widest opacity-60 mb-4">
+            WATCH FROM ANYWHERE
+          </h2>
+          <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl mx-auto text-left">
+            <CapabilityCard
+              icon="⤢"
+              title="PIP overlay"
+              body="Pop the grid into an always-on-top picture-in-picture window so your agents stay visible while you work. Chrome / Edge."
+            />
+            <CapabilityCard
+              icon="📺"
+              title="Cast to TV"
+              body="One-click Chromecast / Web Presentation API. Or open the chromeless /tv view and AirPlay, screen-mirror, or paste into OBS."
+            />
+            <CapabilityCard
+              icon="🔌"
+              title="Any MCP agent"
+              body="Claude Code, Cursor, Codex, n8n, anything that speaks MCP Streamable HTTP. Paste one snippet, restart, agent shows up."
+            />
+          </ul>
+        </div>
+
         {/* Sponsor block — own section, generous whitespace + divider above */}
         <div className="pt-10 mt-6 border-t-[3px] border-ink/10">
           <SponsorBadge slot="home_hero" />
@@ -119,5 +143,19 @@ export default function LandingPage() {
       </div>
     </main>
     </>
+  );
+}
+
+function CapabilityCard({ icon, title, body }: { icon: string; title: string; body: string }) {
+  return (
+    <li className="border-[2.5px] border-ink rounded-xl bg-paper p-3 sm:p-4 shadow-brutal-sm">
+      <div className="flex items-baseline gap-2 mb-1">
+        <span aria-hidden="true" className="text-base">
+          {icon}
+        </span>
+        <h3 className="font-display text-[11px] sm:text-xs tracking-widest">{title}</h3>
+      </div>
+      <p className="text-[12px] leading-snug opacity-80">{body}</p>
+    </li>
   );
 }

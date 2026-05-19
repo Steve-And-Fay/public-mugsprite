@@ -260,12 +260,25 @@ export default function RoomPage() {
                 <p className="text-[10px] sm:text-[11px] mt-1 opacity-80">
                   Share this URL (without <code>?owner=</code>) for read-only viewing.
                 </p>
-                <button
-                  onClick={() => navigator.clipboard.writeText(`${origin}/r/${roomId}`)}
-                  className="mt-2 bg-accent-cyan text-ink border-2 border-paper rounded px-3 py-1 font-display text-[10px] tracking-wider"
-                >
-                  COPY VIEW LINK
-                </button>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <button
+                    onClick={() => navigator.clipboard.writeText(`${origin}/r/${roomId}`)}
+                    className="bg-accent-cyan text-ink border-2 border-paper rounded px-3 py-1 font-display text-[10px] tracking-wider"
+                  >
+                    COPY VIEW LINK
+                  </button>
+                  <PipButton
+                    agents={agentList}
+                    onSpeechEnd={acknowledgeSpeech}
+                    muted={audio.muted}
+                    volume={effectiveVolume}
+                    className="bg-accent-pink text-ink border-2 border-paper rounded px-3 py-1 font-display text-[10px] tracking-wider inline-flex items-center gap-1.5"
+                  />
+                  <CastButton
+                    roomId={roomId}
+                    className="bg-accent-green text-ink border-2 border-paper rounded px-3 py-1 font-display text-[10px] tracking-wider inline-flex items-center gap-1.5"
+                  />
+                </div>
               </header>
               <OwnerPanel
                 roomId={roomId}
