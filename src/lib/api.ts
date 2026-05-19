@@ -98,6 +98,14 @@ export const api = {
       { method: 'POST', ownerToken },
     ),
 
+  // Pass `name: null` (or an empty string — the server normalizes) to clear
+  // a previously-set display name and fall back to showing the room id.
+  renameRoom: (roomId: string, name: string | null, ownerToken: string) =>
+    request<{ ok: true; room: Room }>(
+      `/api/rooms/${encodeURIComponent(roomId)}`,
+      { method: 'PATCH', ownerToken, body: JSON.stringify({ name }) },
+    ),
+
   // Returns the raw Response so callers can stream the file to disk.
   exportRoomUrl: (roomId: string, ownerToken: string) =>
     `/api/rooms/${encodeURIComponent(roomId)}/export?owner=${encodeURIComponent(ownerToken)}`,

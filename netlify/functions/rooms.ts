@@ -11,6 +11,7 @@ import {
   listAgents,
   renewRoom,
   touchRoom,
+  updateRoomName,
 } from './_lib/db';
 import {
   created,
@@ -23,6 +24,7 @@ import {
   unauthorized,
 } from './_lib/http';
 import { consumeRate } from './_lib/rateLimit';
+import { normalizeRoomName, PatchRoomBody } from './_lib/roomName';
 
 const CreateRoomBody = z.object({
   name: z.string().min(1).max(64).optional(),
@@ -43,8 +45,9 @@ export default async (req: Request): Promise<Response> => {
 
     if (segments.length === 1) {
       if (req.method === 'GET') return handleGet(roomId, req);
+      if (req.method === 'PATCH') return handlePatch(roomId, req);
       if (req.method === 'DELETE') return handleDelete(roomId, req);
-      return methodNotAllowed(['GET', 'DELETE']);
+      return methodNotAllowed(['GET', 'PATCH', 'DELETE']);
     }
 
     if (segments.length === 2 && segments[1] === 'agents') {
@@ -163,6 +166,21 @@ async function handleDelete(roomId: string, req: Request): Promise<Response> {
   if (!room) return unauthorized('invalid owner token');
   await deleteRoom(roomId);
   return ok({ ok: true, deletedRoomId: roomId });
+}
+
+async function handlePatch(roomId: string, req: Request): Promise<Response> {
+  const token = parseBearer(req) ?? new URL(req.url).searchParams.get('owner');
+  if (!token) return unauthorized('owner token required');
+  const room = await authenticateRoomOwner(roomId, token);
+  if (!room) return unauthorized('invalid owner token');
+
+  const body = await readJson(req, PatchRoomBody);
+  if (body instanceof Response) return body;
+
+  const nextName = normalizeRoomName(body.name);
+  const updated = await updateRoomName(roomId, nextName);
+  if (!updated) return notFound('room not found');
+  return ok({ ok: true, room: updated });
 }
 
 async function handleRenew(roomId: string, req: Request): Promise<Response> {

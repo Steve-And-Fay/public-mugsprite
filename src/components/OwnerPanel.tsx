@@ -49,6 +49,7 @@ const CLIENT_IDS = [
   'cursor',
   'vscode',
   'codex',
+  'openclaw',
   'other',
 ] as const;
 
@@ -60,6 +61,7 @@ const CLIENT_LABELS: Record<ClientId, string> = {
   cursor: 'CURSOR',
   vscode: 'VS CODE',
   codex: 'CODEX / CHATGPT',
+  openclaw: 'OPENCLAW',
   other: 'OTHER',
 };
 
@@ -130,6 +132,19 @@ headers = { Authorization = "Bearer ${token}" }`,
           'Codex CLI: append to ~/.codex/config.toml (TOML format). ChatGPT (consumer) does not support MCP yet — use Codex CLI or a Custom GPT with Actions.',
         after: 'Restart the codex CLI session.',
       };
+    case 'openclaw': {
+      const serverObj = JSON.stringify({
+        transport: 'streamable-http',
+        url: `${origin}/mcp`,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return {
+        snippet: `openclaw mcp set mugsprite '${serverObj}'`,
+        where:
+          'Run this in any shell. Persists to OpenClaw\'s saved MCP config (see https://docs.openclaw.ai/cli/mcp).',
+        after: 'Restart the OpenClaw session so the new server is picked up at launch.',
+      };
+    }
     case 'other':
       return {
         snippet: jsonBlock(origin, token, 'mcpServers'),

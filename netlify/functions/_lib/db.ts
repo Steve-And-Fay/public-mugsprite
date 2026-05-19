@@ -130,6 +130,16 @@ export async function renewRoom(id: string): Promise<Room | null> {
   return rows[0] ? mapRoom(rows[0]) : null;
 }
 
+export async function updateRoomName(id: string, name: string | null): Promise<Room | null> {
+  const rows = (await sql`
+    UPDATE rooms
+    SET name = ${name}
+    WHERE id = ${id}
+    RETURNING *
+  `) as RoomRow[];
+  return rows[0] ? mapRoom(rows[0]) : null;
+}
+
 export async function deleteRoom(id: string): Promise<void> {
   // agents + events cascade via FK ON DELETE CASCADE.
   await sql`DELETE FROM rooms WHERE id = ${id}`;

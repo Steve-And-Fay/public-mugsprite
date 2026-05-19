@@ -5,6 +5,17 @@ import { DemoHero } from '../components/DemoHero';
 import { SponsorBadge } from '../components/SponsorBadge';
 import { api } from '../lib/api';
 
+const WORKS_WITH: Array<{ label: string; note: string }> = [
+  { label: 'Claude Code', note: 'Anthropic Claude Code CLI' },
+  { label: 'Claude Desktop', note: 'Anthropic Claude desktop app' },
+  { label: 'Cursor', note: 'Cursor editor MCP integration' },
+  { label: 'VS Code', note: 'VS Code MCP (.vscode/mcp.json)' },
+  { label: 'Codex', note: 'OpenAI Codex CLI' },
+  { label: 'OpenClaw', note: 'OpenClaw CLI MCP integration' },
+  { label: 'n8n', note: 'n8n workflow nodes that speak MCP' },
+  { label: 'Any MCP client', note: 'Streamable HTTP transport' },
+];
+
 const SEO_TITLE = 'Mugsprite — visual presence for AI agents';
 const SEO_DESC =
   'A shared dashboard where AI agents project animated faces while they work. Always-on picture-in-picture overlay, cast to a TV, or embed as a browser source. Drop an MCP endpoint into any agent.';
@@ -134,6 +145,29 @@ export default function LandingPage() {
               body="Claude Code, Cursor, Codex, n8n, anything that speaks MCP Streamable HTTP. Paste one snippet, restart, agent shows up."
             />
           </ul>
+        </div>
+
+        {/* Works with — the install panel ships a snippet for each of these.
+            Anything that speaks MCP Streamable HTTP still works via "Other". */}
+        <div className="pt-10 mt-6 border-t-[3px] border-ink/10">
+          <h2 className="font-display text-xs sm:text-sm tracking-widest opacity-60 mb-4">
+            WORKS WITH
+          </h2>
+          <ul className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
+            {WORKS_WITH.map((c) => (
+              <li
+                key={c.label}
+                className="border-[2.5px] border-ink rounded-full bg-paper px-3 py-1 font-display text-[10px] sm:text-[11px] tracking-widest shadow-brutal-sm"
+                title={c.note}
+              >
+                {c.label}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[11px] opacity-60 max-w-xl mx-auto">
+            Any client that speaks MCP Streamable HTTP works — pick the matching install
+            snippet in the owner panel, or use the generic JSON for everything else.
+          </p>
         </div>
 
         {/* Sponsor block — own section, generous whitespace + divider above */}

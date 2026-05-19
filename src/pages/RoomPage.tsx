@@ -82,6 +82,31 @@ export default function RoomPage() {
   // bottom, then translate the button up by that amount so it rides above the
   // footer instead of over it.
   const [footerOverlap, setFooterOverlap] = useState(0);
+  const [viewLinkCopied, setViewLinkCopied] = useState(false);
+
+  const handleCopyViewLink = async () => {
+    const url = `${origin}/r/${roomId}`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        // Insecure context / blocked clipboard — fall back to a hidden textarea
+        // so the user still gets the URL on the clipboard without a popup.
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setViewLinkCopied(true);
+      setTimeout(() => setViewLinkCopied(false), 1800);
+    } catch {
+      alert(`Couldn't copy automatically. Copy this URL manually:\n\n${url}`);
+    }
+  };
   useEffect(() => {
     if (!isOwner) return;
     const footer = document.querySelector('footer');
@@ -255,18 +280,22 @@ export default function RoomPage() {
               `}
             >
               <header className="bg-ink text-paper border-[3px] border-ink rounded-2xl p-3 sm:p-4 shadow-brutal">
-                <h2 className="font-display text-[10px] sm:text-xs tracking-widest text-accent-yellow">
-                  ▸ Room {roomId}
-                </h2>
+                <RoomNameHeader
+                  roomId={roomId ?? ''}
+                  currentName={room?.name ?? null}
+                  ownerToken={ownerToken}
+                  onRenamed={(name) => setRoom((r) => (r ? { ...r, name } : r))}
+                />
                 <p className="text-[10px] sm:text-[11px] mt-1 opacity-80">
                   Share this URL (without <code>?owner=</code>) for read-only viewing.
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   <button
-                    onClick={() => navigator.clipboard.writeText(`${origin}/r/${roomId}`)}
-                    className="bg-accent-cyan text-ink border-2 border-paper rounded px-3 py-1 font-display text-[10px] tracking-wider"
+                    onClick={handleCopyViewLink}
+                    aria-live="polite"
+                    className="bg-accent-cyan text-ink border-2 border-paper rounded px-3 py-1 font-display text-[10px] tracking-wider transition-colors"
                   >
-                    COPY VIEW LINK
+                    {viewLinkCopied ? '✓ COPIED' : 'COPY VIEW LINK'}
                   </button>
                   <PipButton
                     agents={agentList}
@@ -324,5 +353,110 @@ export default function RoomPage() {
       )}
     </main>
     </>
+  );
+}
+
+// Inline-editable display name for the room. Falls back to the room id when
+// no name is set. Owner-only; the parent only mounts this inside the owner
+// aside, so we don't need to gate on isOwner here.
+function RoomNameHeader({
+  roomId,
+  currentName,
+  ownerToken,
+  onRenamed,
+}: {
+  roomId: string;
+  currentName: string | null;
+  ownerToken: string;
+  onRenamed: (name: string | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(currentName ?? '');
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = () => {
+    setDraft(currentName ?? '');
+    setEditing(true);
+  };
+
+  const cancel = () => {
+    setEditing(false);
+    setDraft(currentName ?? '');
+  };
+
+  const save = async () => {
+    const trimmed = draft.trim();
+    const next = trimmed === '' ? null : trimmed;
+    if (next === (currentName ?? null)) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      const result = await api.renameRoom(roomId, next, ownerToken);
+      onRenamed(result.room.name ?? null);
+      setEditing(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to rename room');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+        className="flex items-center gap-1.5"
+      >
+        <input
+          autoFocus
+          type="text"
+          value={draft}
+          maxLength={64}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') cancel();
+          }}
+          placeholder={roomId}
+          aria-label="Room name"
+          className="flex-1 min-w-0 bg-paper text-ink border-2 border-paper rounded px-2 py-0.5 font-display text-[11px] sm:text-xs tracking-widest"
+        />
+        <button
+          type="submit"
+          disabled={saving}
+          className="bg-accent-green text-ink border-2 border-paper rounded px-2 py-0.5 font-display text-[10px] tracking-wider disabled:opacity-60"
+        >
+          {saving ? '…' : 'SAVE'}
+        </button>
+        <button
+          type="button"
+          onClick={cancel}
+          className="bg-transparent text-paper border-2 border-paper/60 rounded px-2 py-0.5 font-display text-[10px] tracking-wider hover:bg-paper hover:text-ink"
+        >
+          CANCEL
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 min-w-0">
+      <h2 className="font-display text-[10px] sm:text-xs tracking-widest text-accent-yellow truncate">
+        ▸ {currentName ? currentName : `Room ${roomId}`}
+      </h2>
+      <button
+        type="button"
+        onClick={startEdit}
+        aria-label="Rename room"
+        title="Rename room"
+        className="shrink-0 font-display text-[10px] leading-none border-2 border-paper/60 rounded px-1.5 py-0.5 hover:bg-paper hover:text-ink transition-colors"
+      >
+        ✎
+      </button>
+    </div>
   );
 }
