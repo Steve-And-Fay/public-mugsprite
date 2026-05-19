@@ -4,7 +4,10 @@
   functions = "netlify/functions"
 
 [dev]
-  command = "npm run dev:vite"
+  # Wipe dist/ before starting Vite so a stale `_headers` from a previous
+  # production build can't leak its CSP onto the dev server (which would
+  # block Vite's inline React Fast Refresh preamble).
+  command = "rm -rf dist && npm run dev:vite"
   port = 8888
   targetPort = 5173
   framework = "vite"
