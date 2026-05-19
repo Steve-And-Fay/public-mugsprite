@@ -1,9 +1,10 @@
 import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Layout } from './components/Layout';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const RoomPage = lazy(() => import('./pages/RoomPage'));
+const TvPage = lazy(() => import('./pages/TvPage'));
 const FaqPage = lazy(() => import('./pages/FaqPage'));
 const SponsorPage = lazy(() => import('./pages/SponsorPage'));
 const TermsPage = lazy(() =>
@@ -68,12 +69,23 @@ function RouteFallback() {
   );
 }
 
+function LayoutRoute() {
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
-      <Layout>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          {/* TV view: no Layout (no banner, no footer) — chromeless full screen. */}
+          <Route path="/r/:roomId/tv" element={<TvPage />} />
+          {/* Everything else gets the standard Layout wrapper. */}
+          <Route element={<LayoutRoute />}>
             <Route path="/" element={<LandingPage />} />
             <Route path="/r/:roomId" element={<RoomPage />} />
             <Route path="/terms" element={<TermsPage />} />
@@ -81,9 +93,9 @@ export default function App() {
             <Route path="/sponsor" element={<SponsorPage />} />
             <Route path="/faq" element={<FaqPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </Layout>
+          </Route>
+        </Routes>
+      </Suspense>
     </ErrorBoundary>
   );
 }

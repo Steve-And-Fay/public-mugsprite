@@ -7,6 +7,7 @@ import { AgentGrid } from '../components/AgentGrid';
 import { ExpiredCard } from '../components/ExpiredCard';
 import { MyDataDisclosure } from '../components/MyDataDisclosure';
 import { OwnerPanel } from '../components/OwnerPanel';
+import { CastButton } from '../components/CastButton';
 import { useRoomStream } from '../lib/useRoomStream';
 
 const AUDIO_KEY = 'mugsprite:audio';
@@ -204,6 +205,10 @@ export default function RoomPage() {
                 {Math.round(audio.volume * 100)}
               </span>
             </label>
+            <CastButton
+              roomId={roomId}
+              className="bg-paper border-[2.5px] border-ink rounded-lg px-3 py-1.5 font-display text-[10px] tracking-widest shadow-brutal-sm inline-flex items-center gap-2 hover:bg-ink hover:text-paper transition-colors"
+            />
           </div>
           <div className="flex items-start justify-center">
             <AgentGrid

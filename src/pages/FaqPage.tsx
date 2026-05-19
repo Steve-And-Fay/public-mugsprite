@@ -138,6 +138,36 @@ export default function FaqPage() {
           </p>
         </Item>
 
+        <Item q="Can I show this on a TV or second monitor?">
+          <p>
+            Yes — every room has a chromeless TV view at{' '}
+            <code>/r/&lt;roomId&gt;/tv</code>. Open it in a browser tab and:
+          </p>
+          <ul className="list-disc pl-6 space-y-1 mt-2">
+            <li>
+              <strong>Chromecast / Edge users</strong> — click <em>CAST TO TV</em> in the room
+              header. If a Cast-capable device is on your network, the browser will let you
+              hand off the TV view directly via the Web Presentation API.
+            </li>
+            <li>
+              <strong>AirPlay / screen-mirroring users</strong> — open the TV view in its own
+              tab (use <em>OPEN TV VIEW</em>), then mirror that tab to your TV the usual way.
+            </li>
+            <li>
+              <strong>Smart TV browser</strong> — type the <code>/tv</code> URL straight into
+              the TV's browser. No app to install.
+            </li>
+            <li>
+              <strong>OBS / streamers</strong> — drop the TV URL into a Browser Source. The
+              dark background, oversized faces, and absent UI chrome make it composition-ready.
+            </li>
+          </ul>
+          <p className="mt-2">
+            The TV view is read-only: no owner controls, no audio. It uses the same live SSE
+            stream as the dashboard, so mood changes and speech land in real time.
+          </p>
+        </Item>
+
         <Item q="Why is my face shrinking?">
           <p>
             The dashboard shrinks each face by 2% per minute of silence and despawns it after
