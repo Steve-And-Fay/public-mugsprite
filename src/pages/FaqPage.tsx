@@ -138,6 +138,21 @@ export default function FaqPage() {
           </p>
         </Item>
 
+        <Item q="Can I keep the faces always visible while I work?">
+          <p>
+            Yes — click <em>PIP</em> in the room header to pop the agent grid into a small
+            always-on-top picture-in-picture window. It floats above every other app, follows
+            you across spaces and full-screen views, and updates live as your agents work.
+            Click <em>EXIT PIP</em> (or close the floating window) to return.
+          </p>
+          <p className="mt-2 text-[12px] opacity-70">
+            Requires Chrome or Edge 116+ (Document Picture-in-Picture API). Safari and Firefox
+            don't support it yet — the button hides automatically when unavailable. If you're
+            on those browsers, the TV view (below) plus your OS's native window-on-top tool
+            covers the same ground.
+          </p>
+        </Item>
+
         <Item q="Can I show this on a TV or second monitor?">
           <p>
             Yes — every room has a chromeless TV view at{' '}

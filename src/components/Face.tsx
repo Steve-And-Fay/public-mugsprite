@@ -191,7 +191,7 @@ function FaceImpl({
           }}
         />
 
-        <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-paper/95 border-2 border-ink rounded-full font-display text-[9px] sm:text-[10px] tracking-widest shadow-brutal-sm z-10">
+        <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[9px] sm:text-[10px] tracking-widest shadow-brutal-sm z-10">
           {moodDef.label.toUpperCase()}
         </div>
 
@@ -300,7 +300,7 @@ function FaceImpl({
       >
         <span className="font-display">{name}</span>
         {status && (
-          <span className="text-ink/70 italic tracking-normal normal-case"> — {status}</span>
+          <span className="opacity-70 italic tracking-normal normal-case"> — {status}</span>
         )}
       </div>
     </div>
