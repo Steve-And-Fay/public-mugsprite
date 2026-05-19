@@ -1,0 +1,6 @@
+dist
+node_modules
+.netlify
+coverage
+playwright-report
+package-lock.json

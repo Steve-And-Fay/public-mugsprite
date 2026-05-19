@@ -1,0 +1,52 @@
+{
+  "version": "5",
+  "redirects": {
+    "https://esm.sh/@neondatabase/serverless@0.x?target=denonext": "https://esm.sh/@neondatabase/serverless@0.10.4?target=denonext"
+  },
+  "remote": {
+    "https://esm.sh/@neondatabase/serverless@0.10.4/denonext/serverless.mjs": "b291661f21f907d06bdb447e4080ae9f3061afb89367bc963c9beeac5c4842fb",
+    "https://esm.sh/@neondatabase/serverless@0.10.4?target=denonext": "cc344c1fbfef2467fe896638cc87ad3eb321c90943c7bc832a8c140cd0b4af71",
+    "https://esm.sh/@netlify/neon@0.1.0": "444c86b90a1373ee0751bc028f8f2a1c085a40971a8792a5e2282542819b5799",
+    "https://esm.sh/@netlify/neon@0.1.0/denonext/neon.mjs": "e4cd3db8624d1a8799f7832132953c290033692d566a77ecec6a85aa5ea9680b"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@modelcontextprotocol/sdk@^1.0.4",
+        "npm:@netlify/database@1",
+        "npm:@netlify/edge-functions@^2.11.0",
+        "npm:@netlify/functions@^2.8.2",
+        "npm:@netlify/neon@0.1",
+        "npm:@playwright/test@^1.49.0",
+        "npm:@types/node@^22.10.1",
+        "npm:@types/react-dom@^18.3.1",
+        "npm:@types/react@^18.3.12",
+        "npm:@typescript-eslint/eslint-plugin@^8.16.0",
+        "npm:@typescript-eslint/parser@^8.16.0",
+        "npm:@vitejs/plugin-react@^4.3.4",
+        "npm:autoprefixer@^10.4.20",
+        "npm:drizzle-kit@^1.0.0-beta.22",
+        "npm:drizzle-orm@^1.0.0-beta.22",
+        "npm:eslint-config-prettier@^9.1.0",
+        "npm:eslint-plugin-react-hooks@5",
+        "npm:eslint-plugin-react-refresh@~0.4.16",
+        "npm:eslint-plugin-react@^7.37.2",
+        "npm:eslint@^9.16.0",
+        "npm:globals@^17.6.0",
+        "npm:jsdom@^25.0.1",
+        "npm:netlify-cli@^17.38.0",
+        "npm:postcss@^8.4.49",
+        "npm:prettier@^3.4.1",
+        "npm:react-dom@^18.3.1",
+        "npm:react-router-dom@^6.28.0",
+        "npm:react@^18.3.1",
+        "npm:tailwindcss@^3.4.15",
+        "npm:typescript@^5.7.2",
+        "npm:unique-names-generator@^4.7.1",
+        "npm:vite@^6.0.1",
+        "npm:vitest@^2.1.6",
+        "npm:zod@^3.23.8"
+      ]
+    }
+  }
+}

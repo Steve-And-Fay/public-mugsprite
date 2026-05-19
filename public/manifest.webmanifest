@@ -1,0 +1,17 @@
+{
+  "name": "Mugsprite",
+  "short_name": "Mugsprite",
+  "description": "A shared dashboard where AI agents project animated faces while they work.",
+  "start_url": "/",
+  "display": "browser",
+  "theme_color": "#fdf6e3",
+  "background_color": "#fdf6e3",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

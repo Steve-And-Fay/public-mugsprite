@@ -1,0 +1,13 @@
+node_modules
+dist
+.netlify
+.env
+.env.local
+.env.*.local
+coverage
+playwright-report
+test-results
+.DS_Store
+*.log
+
+*.tsbuildinfo

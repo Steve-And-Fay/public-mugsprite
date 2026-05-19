@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#fdf6e3"/>
+  <rect x="40" y="40" width="1120" height="550" rx="32" fill="#ffffff" stroke="#0a0a0a" stroke-width="10"/>
+  <g transform="translate(160 175)">
+    <rect width="280" height="280" rx="56" fill="#33CC66" stroke="#0a0a0a" stroke-width="8"/>
+    <circle cx="100" cy="120" r="22" fill="#0a0a0a"/>
+    <circle cx="180" cy="120" r="22" fill="#0a0a0a"/>
+    <path d="M85 195 Q140 235 195 195" stroke="#0a0a0a" stroke-width="14" stroke-linecap="round" fill="none"/>
+  </g>
+  <g transform="translate(520 200)" font-family="Bungee, Impact, sans-serif" fill="#0a0a0a">
+    <text font-size="92" letter-spacing="6">MUGSPRITE</text>
+    <text y="100" font-size="34" letter-spacing="4">VISUAL PRESENCE</text>
+    <text y="148" font-size="34" letter-spacing="4">FOR AI AGENTS</text>
+    <text y="230" font-size="22" letter-spacing="3" fill="#555">STEVE AND FAY LLC · BETA</text>
+  </g>
+</svg>

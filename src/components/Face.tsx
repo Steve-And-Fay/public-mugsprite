@@ -1,0 +1,310 @@
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { MOODS, TALK_MOUTHS, type MoodKey, type MouthStyle } from '@shared/moods';
+import { Accessories, Brows, Eye, Teeth } from './FaceParts';
+import { mouthPaths, tonguePath } from './mouthPaths';
+
+interface FaceProps {
+  mood: MoodKey;
+  color: string;
+  name: string;
+  status?: string | null;
+  updatedAt?: string;
+  speakingText?: string | null;
+  onSpeechEnd?: () => void;
+  voice?: SpeechSynthesisVoice | null;
+  pitch?: number;
+  rate?: number;
+  muted?: boolean;
+  volume?: number;
+}
+
+// Staleness shrink: 2% per minute, fully gone at 30 minutes.
+// Activity (mood change, speech) resets updatedAt server-side, so the
+// face pops back to full size whenever an agent reports in.
+const SHRINK_PER_MIN = 0.02;
+export const DESPAWN_AFTER_MIN = 30;
+
+// Threshold below which the stale badge stays hidden — keeps brand-new faces clean.
+const STALE_BADGE_AFTER_MS = 15_000;
+
+function formatRelative(ms: number): string {
+  if (ms < 60_000) return `${Math.max(1, Math.floor(ms / 1000))}s`;
+  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m`;
+  return `${Math.floor(ms / 3_600_000)}h`;
+}
+
+function useStalenessAge(updatedAt: string | undefined, paused: boolean): number {
+  const [age, setAge] = useState(0);
+  useEffect(() => {
+    if (!updatedAt) {
+      setAge(0);
+      return;
+    }
+    const base = new Date(updatedAt).getTime();
+    if (Number.isNaN(base)) {
+      setAge(0);
+      return;
+    }
+    const tick = () => setAge(Date.now() - base);
+    tick();
+    if (paused) {
+      // While paused (actively speaking or very recently updated), the badge
+      // can't appear anyway — skip the per-second re-render churn. Schedule a
+      // single timeout to resume ticking once the badge threshold is reachable.
+      const elapsed = Date.now() - base;
+      const resumeIn = Math.max(0, STALE_BADGE_AFTER_MS - elapsed);
+      const t = setTimeout(tick, resumeIn);
+      return () => clearTimeout(t);
+    }
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [updatedAt, paused]);
+  return age;
+}
+
+function FaceImpl({
+  mood,
+  color,
+  name,
+  status,
+  updatedAt,
+  speakingText,
+  onSpeechEnd,
+  voice = null,
+  pitch = 1.4,
+  rate = 1.05,
+  muted = false,
+  volume = 1,
+}: FaceProps) {
+  // Pause the staleness ticker while actively speaking — the badge can't
+  // render in that state anyway, and we don't need a re-render every second.
+  const stalenessPaused = Boolean(speakingText);
+  const age = useStalenessAge(updatedAt, stalenessPaused);
+  const ageMinutes = speakingText ? 0 : age / 60_000;
+  const shrinkScale = Math.max(0, 1 - SHRINK_PER_MIN * ageMinutes);
+  const moodDef = MOODS[mood];
+  const [isTalking, setIsTalking] = useState(false);
+  const [talkMouth, setTalkMouth] = useState<MouthStyle | null>(null);
+  const [popKey, setPopKey] = useState(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setPopKey((k) => k + 1);
+  }, [mood]);
+
+  useEffect(() => {
+    if (!speakingText) return;
+
+    let lastSwap = 0;
+    const cycle = (t: number) => {
+      if (t - lastSwap > 75 + Math.random() * 80) {
+        const idx = Math.floor(Math.random() * TALK_MOUTHS.length);
+        setTalkMouth(TALK_MOUTHS[idx]!);
+        lastSwap = t;
+      }
+      rafRef.current = requestAnimationFrame(cycle);
+    };
+
+    const finish = () => {
+      setIsTalking(false);
+      setTalkMouth(null);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      onSpeechEnd?.();
+    };
+
+    const canSpeak =
+      !muted && typeof window !== 'undefined' && 'speechSynthesis' in window && volume > 0;
+
+    if (!canSpeak) {
+      // Still animate mouth and show the bubble for a duration scaled to text length,
+      // so muted viewers see the speech bubble for a sensible read time.
+      setIsTalking(true);
+      rafRef.current = requestAnimationFrame(cycle);
+      const readMs = Math.max(1500, Math.min(8000, speakingText.length * 65));
+      const timer = window.setTimeout(finish, readMs);
+      return () => {
+        window.clearTimeout(timer);
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      };
+    }
+
+    const synth = window.speechSynthesis;
+    if (synth.speaking) synth.cancel();
+
+    const utter = new SpeechSynthesisUtterance(speakingText);
+    utter.pitch = pitch;
+    utter.rate = rate;
+    utter.volume = volume;
+    if (voice) utter.voice = voice;
+
+    utter.onstart = () => {
+      setIsTalking(true);
+      rafRef.current = requestAnimationFrame(cycle);
+    };
+    utter.onend = finish;
+    utter.onerror = finish;
+
+    synth.speak(utter);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (synth.speaking) synth.cancel();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speakingText, muted, volume]);
+
+  const effectiveMouth: MouthStyle = isTalking && talkMouth ? talkMouth : moodDef.mouth;
+
+  const timings = useMemo(
+    () => ({
+      breathDur: (3.2 + Math.random() * 1.3).toFixed(2),
+      breathDelay: (-Math.random() * 4).toFixed(2),
+      eyeDur: (3.8 + Math.random() * 1.4).toFixed(2),
+      eyeDelay: (-Math.random() * 4).toFixed(2),
+      mouthDur: (4.5 + Math.random() * 2).toFixed(2),
+      mouthDelay: (-Math.random() * 5).toFixed(2),
+    }),
+    [],
+  );
+
+  return (
+    <div
+      className="flex flex-col gap-1.5 min-w-0 min-h-0 transition-transform duration-1000 ease-out origin-center"
+      style={{ transform: `scale(${shrinkScale.toFixed(3)})` }}
+    >
+      <div
+        className="relative aspect-square w-full rounded-[22px] overflow-hidden border-[3px] border-ink shadow-brutal-lg select-none"
+        style={{ backgroundColor: color }}
+      >
+        {/* Top sheen — subtle white gradient for depth */}
+        <div
+          className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(255,255,255,0.18), transparent)',
+          }}
+        />
+        {/* Bottom shadow — anchors the face */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-1/4 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to top, rgba(0,0,0,0.12), transparent)',
+          }}
+        />
+
+        <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-paper/95 border-2 border-ink rounded-full font-display text-[9px] sm:text-[10px] tracking-widest shadow-brutal-sm z-10">
+          {moodDef.label.toUpperCase()}
+        </div>
+
+        {age >= STALE_BADGE_AFTER_MS && !speakingText && (
+          <div
+            className="absolute top-2.5 right-2.5 px-2 py-0.5 bg-ink/80 text-paper rounded-full font-display text-[8px] sm:text-[9px] tracking-widest z-10"
+            title={`Last update ${formatRelative(age)} ago`}
+          >
+            {formatRelative(age)}
+          </div>
+        )}
+
+        {speakingText && (
+          <div
+            className="absolute left-1/2 -translate-x-1/2 top-2 z-20 pointer-events-none w-[88%]"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="relative bg-paper border-[3px] border-ink rounded-2xl px-3 py-2 shadow-brutal-sm text-ink text-[11px] sm:text-xs leading-snug font-sans">
+              {speakingText}
+              <span
+                aria-hidden
+                className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-3 h-3 bg-paper border-b-[3px] border-r-[3px] border-ink rotate-45"
+              />
+            </div>
+          </div>
+        )}
+
+        <div key={popKey} className="face-pop popping">
+          <div className={`face-bob ${isTalking ? 'bobbing' : ''}`}>
+            <div
+              className="face-breath"
+              style={{
+                animationDuration: `${timings.breathDur}s`,
+                animationDelay: `${timings.breathDelay}s`,
+              }}
+            >
+              <svg
+                className="face-svg"
+                viewBox="0 0 1000 1000"
+                data-eyes={moodDef.eyes}
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="xMidYMid meet"
+                role="img"
+                aria-label={`${name} agent — ${moodDef.label}`}
+              >
+                <g className="accessories">
+                  <Accessories mood={mood} />
+                </g>
+                <g className="brows">
+                  <Brows style={moodDef.brows} />
+                </g>
+                <g
+                  className="leftEye"
+                  style={{
+                    animationDuration: `${timings.eyeDur}s`,
+                    animationDelay: `${timings.eyeDelay}s`,
+                  }}
+                >
+                  <Eye style={moodDef.eyes} cx={320} cy={380} isLeft={true} />
+                </g>
+                <g
+                  className="rightEye"
+                  style={{
+                    animationDuration: `${timings.eyeDur}s`,
+                    animationDelay: `${timings.eyeDelay}s`,
+                  }}
+                >
+                  <Eye style={moodDef.eyes} cx={680} cy={380} isLeft={false} />
+                </g>
+                <g
+                  className="mouthGroup"
+                  style={{
+                    animationDuration: `${timings.mouthDur}s`,
+                    animationDelay: `${timings.mouthDelay}s`,
+                  }}
+                >
+                  <path
+                    className="mouthPath"
+                    fill="#0a0a0a"
+                    stroke="#0a0a0a"
+                    strokeWidth={6}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    d={mouthPaths[effectiveMouth]}
+                  />
+                  <g className="teeth">
+                    <Teeth mouth={effectiveMouth} />
+                  </g>
+                  <path
+                    className="tongue"
+                    fill="#ff4d6d"
+                    stroke="#0a0a0a"
+                    strokeWidth={5}
+                    d={tonguePath(effectiveMouth)}
+                  />
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        className="text-center text-[10px] sm:text-[11px] tracking-widest truncate px-1"
+        title={status ? `${name} — ${status}` : name}
+      >
+        <span className="font-display">{name}</span>
+        {status && (
+          <span className="text-ink/70 italic tracking-normal normal-case"> — {status}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export const Face = memo(FaceImpl);

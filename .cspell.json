@@ -1,0 +1,36 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "mugsprite",
+    "Mugsprite",
+    "MUGSPRITE",
+    "Streamable",
+    "Jitsi",
+    "llms",
+    "Neon",
+    "esbuild",
+    "esm",
+    "fdf",
+    "Fredoka",
+    "Bungee",
+    "Brutalist",
+    "viewbox",
+    "wobble",
+    "moodmini",
+    "openclaw",
+    "tsbuildinfo",
+    "vitest",
+    "jsdom",
+    "tailwindcss",
+    "autoprefixer"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "dist",
+    ".netlify",
+    "coverage",
+    "playwright-report",
+    "package-lock.json"
+  ]
+}

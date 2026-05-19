@@ -1,0 +1,106 @@
+import type { Agent, Room } from '@shared/types';
+
+export interface CreateRoomResponse {
+  room: Pick<Room, 'id' | 'name' | 'createdAt'>;
+  ownerToken: string;
+  dashboardUrl: string;
+}
+
+export interface GetRoomResponse {
+  room: Room;
+  isOwner: boolean;
+}
+
+export interface CreateAgentResponse {
+  agent: Agent;
+}
+
+export interface AgentInstallResponse {
+  agent: Agent;
+  agentJoinToken: string;
+}
+
+class ApiError extends Error {
+  status: number;
+  body: unknown;
+  constructor(status: number, message: string, body: unknown) {
+    super(message);
+    this.status = status;
+    this.body = body;
+  }
+}
+
+async function request<T>(
+  path: string,
+  init: RequestInit & { ownerToken?: string } = {},
+): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set('content-type', 'application/json');
+  if (init.ownerToken) headers.set('authorization', `Bearer ${init.ownerToken}`);
+
+  const res = await fetch(path, { ...init, headers });
+  const text = await res.text();
+  const body = text ? (JSON.parse(text) as unknown) : null;
+
+  if (!res.ok) {
+    const message =
+      body && typeof body === 'object' && 'message' in body
+        ? String((body as { message: unknown }).message)
+        : `HTTP ${res.status}`;
+    throw new ApiError(res.status, message, body);
+  }
+  return body as T;
+}
+
+export const api = {
+  createRoom: (name?: string) =>
+    request<CreateRoomResponse>('/api/rooms', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+
+  getRoom: (roomId: string, ownerToken?: string) =>
+    request<GetRoomResponse>(
+      `/api/rooms/${encodeURIComponent(roomId)}${ownerToken ? `?owner=${encodeURIComponent(ownerToken)}` : ''}`,
+    ),
+
+  listAgents: (roomId: string) =>
+    request<{ agents: Agent[] }>(`/api/rooms/${encodeURIComponent(roomId)}/agents`),
+
+  createAgent: (roomId: string, name: string, color: string, ownerToken: string) =>
+    request<CreateAgentResponse>('/api/agents', {
+      method: 'POST',
+      ownerToken,
+      body: JSON.stringify({ roomId, name, color }),
+    }),
+
+  getAgentInstall: (agentId: string, ownerToken: string) =>
+    request<AgentInstallResponse>(`/api/agents/${encodeURIComponent(agentId)}`, {
+      method: 'GET',
+      ownerToken,
+    }),
+
+  deleteAgent: (agentId: string, ownerToken: string) =>
+    request<null>(`/api/agents/${encodeURIComponent(agentId)}`, {
+      method: 'DELETE',
+      ownerToken,
+    }),
+
+  deleteRoom: (roomId: string, ownerToken: string) =>
+    request<{ ok: true; deletedRoomId: string }>(
+      `/api/rooms/${encodeURIComponent(roomId)}`,
+      { method: 'DELETE', ownerToken },
+    ),
+
+  renewRoom: (roomId: string, ownerToken: string) =>
+    request<{ ok: true; expiresAt: string }>(
+      `/api/rooms/${encodeURIComponent(roomId)}/renew`,
+      { method: 'POST', ownerToken },
+    ),
+
+  // Returns the raw Response so callers can stream the file to disk.
+  exportRoomUrl: (roomId: string, ownerToken: string) =>
+    `/api/rooms/${encodeURIComponent(roomId)}/export?owner=${encodeURIComponent(ownerToken)}`,
+};
+
+export { ApiError };
