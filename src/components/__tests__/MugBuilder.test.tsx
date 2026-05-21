@@ -46,7 +46,8 @@ afterEach(() => {
 // reaches the server on Save, Cancel sends nothing, and Reset only fires
 // when the agent has traits to clear.
 describe('MugBuilder', () => {
-  it('renders an eye-family tile and a mouth-family tile for every known family', () => {
+  it('renders the eye-family tiles by default and the mouth tab swaps to mouth families', async () => {
+    const user = userEvent.setup();
     render(
       <MugBuilder
         agent={sampleAgent()}
@@ -55,15 +56,19 @@ describe('MugBuilder', () => {
         onDismiss={() => {}}
       />,
     );
-    // Family labels appear in the tile chip (uppercased). Each family name
-    // appears at least once (some appear in both eye + mouth sections — that's
-    // expected and intentional, the labels are shared).
-    expect(screen.getAllByText('ROUND').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('PIXEL').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('CURVE').length).toBeGreaterThan(0);
-    // The 12-mood preview labels carry through.
+    // EYES tab is active by default — round + pixel eye families show.
+    expect(screen.getByText('ROUND')).toBeInTheDocument();
+    expect(screen.getByText('PIXEL')).toBeInTheDocument();
+    // The 12-mood preview is always visible on the right pane.
     expect(screen.getAllByText('IDLE').length).toBeGreaterThan(0);
     expect(screen.getAllByText('SLEEPY').length).toBeGreaterThan(0);
+
+    // Switch to the Mouth tab — now the mouth families render.
+    await user.click(screen.getByRole('tab', { name: /mouth/i }));
+    expect(screen.getByText('CURVE')).toBeInTheDocument();
+    // PIXEL is the shared label for both pixel families; it's still here in
+    // the mouth tab too.
+    expect(screen.getByText('PIXEL')).toBeInTheDocument();
   });
 
   it('sends the picked families to the server on Save', async () => {
@@ -83,11 +88,11 @@ describe('MugBuilder', () => {
       />,
     );
 
-    // Pick the Pixel family for both eyes and mouth — Pixel appears in both
-    // sections, getAllByText returns them in DOM order (eye tile first).
-    const pixelTiles = screen.getAllByText('PIXEL');
-    await user.click(pixelTiles[0]!); // eye family pixel
-    await user.click(pixelTiles[1]!); // mouth family pixel
+    // Eyes tab is open by default — pick Pixel eyes.
+    await user.click(screen.getByText('PIXEL'));
+    // Switch to Mouth tab, then pick Pixel mouth.
+    await user.click(screen.getByRole('tab', { name: /mouth/i }));
+    await user.click(screen.getByText('PIXEL'));
     await user.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() => {

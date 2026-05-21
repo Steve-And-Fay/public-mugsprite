@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AgentTraitsSchema,
   DEFAULT_EYES_FAMILY,
@@ -11,7 +11,6 @@ import {
   MOUTH_FAMILY_LABELS,
   type AgentTraits,
   type EyeFamily,
-  type MoodKey,
   type MouthFamily,
 } from '@shared/moods';
 import type { Agent } from '@shared/types';
@@ -31,33 +30,26 @@ const STARTING_DEFAULTS: AgentTraits = {
   mouthFamily: DEFAULT_MOUTH_FAMILY,
 };
 
-// Auto-cycle through moods every ~1.8s to keep the hero alive. Users can lock
-// onto a single mood by tapping a thumbnail in the mood scrub strip; we resume
-// auto-cycling when they tap AUTO.
-const HERO_CYCLE_MS = 1800;
+// Tabs are the scaling primitive — every new customization category (face
+// shape, accessories, pattern) becomes a new tab without restructuring the
+// rest of the UI. Keep TAB_IDS in lockstep with what the tab content switch
+// below handles.
+const TAB_IDS = ['eyes', 'mouth', 'color'] as const;
+type TabId = (typeof TAB_IDS)[number];
+const TAB_LABELS: Record<TabId, string> = {
+  eyes: 'Eyes',
+  mouth: 'Mouth',
+  color: 'Color',
+};
 
 export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilderProps) {
   const starting = agent.traits ?? STARTING_DEFAULTS;
   const [eyesFamily, setEyesFamily] = useState<EyeFamily>(starting.eyesFamily);
   const [mouthFamily, setMouthFamily] = useState<MouthFamily>(starting.mouthFamily);
   const [color, setColor] = useState<string>(agent.color);
+  const [tab, setTab] = useState<TabId>('eyes');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Hero animation: either rotates through moods automatically, or stays
-  // locked on a user-chosen one. `lockedMood = null` means auto-cycle.
-  const [lockedMood, setLockedMood] = useState<MoodKey | null>(null);
-  const [autoIndex, setAutoIndex] = useState(0);
-
-  useEffect(() => {
-    if (lockedMood) return;
-    const id = setInterval(() => {
-      setAutoIndex((i) => (i + 1) % MOOD_KEYS.length);
-    }, HERO_CYCLE_MS);
-    return () => clearInterval(id);
-  }, [lockedMood]);
-
-  const heroMood: MoodKey = lockedMood ?? MOOD_KEYS[autoIndex]!;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -121,7 +113,7 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
         if (e.target === e.currentTarget) onDismiss();
       }}
     >
-      <section className="bg-paper text-ink border-[3px] border-ink rounded-none sm:rounded-2xl shadow-brutal w-full sm:max-w-2xl max-h-screen sm:max-h-[95vh] flex flex-col">
+      <section className="bg-paper text-ink border-[3px] border-ink rounded-none sm:rounded-2xl shadow-brutal w-full sm:max-w-5xl max-h-screen sm:max-h-[95vh] flex flex-col">
         <header className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b-[3px] border-ink shrink-0">
           <h2
             id="mug-builder-title"
@@ -138,111 +130,115 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
           </button>
         </header>
 
-        <div className="overflow-y-auto">
-          {/* HERO — big animated face cycling through moods */}
-          <div className="px-3 sm:px-6 pt-4 pb-2 bg-paper">
-            <div className="relative mx-auto" style={{ maxWidth: 'min(72vw, 320px)' }}>
-              <div className="aspect-square">
-                <Face
-                  mood={heroMood}
-                  color={color}
-                  name=""
-                  traits={traits}
-                  muted
-                  volume={0}
-                  compact
-                />
-              </div>
-              {/* Mood label + auto/lock toggle */}
-              <div className="mt-2 flex items-center justify-center gap-2">
-                <span className="font-display text-[11px] sm:text-xs tracking-widest opacity-80">
-                  {MOODS[heroMood].label.toUpperCase()}
-                </span>
-                {lockedMood && (
+        <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          {/* LEFT — tabs + active tab's picker grid */}
+          <div className="flex flex-col min-h-0 border-b-[3px] lg:border-b-0 lg:border-r-[3px] border-ink">
+            <div
+              role="tablist"
+              aria-label="Customization categories"
+              className="flex gap-1 overflow-x-auto px-3 sm:px-4 pt-3 pb-0 shrink-0"
+            >
+              {TAB_IDS.map((id) => {
+                const active = tab === id;
+                return (
                   <button
+                    key={id}
                     type="button"
-                    onClick={() => setLockedMood(null)}
-                    className="font-display text-[9px] tracking-widest border-2 border-ink rounded-full px-2 py-0.5 bg-accent-yellow shadow-brutal-sm"
+                    role="tab"
+                    aria-selected={active}
+                    aria-controls={`tabpanel-${id}`}
+                    id={`tab-${id}`}
+                    onClick={() => setTab(id)}
+                    className={`font-display text-[10px] sm:text-xs tracking-widest border-2 border-ink rounded-t-lg px-3 py-2 shrink-0 transition ${
+                      active
+                        ? 'bg-accent-pink border-b-paper -mb-[2px] z-10'
+                        : 'bg-paper opacity-70 hover:opacity-100'
+                    }`}
                   >
-                    AUTO ↻
+                    {TAB_LABELS[id].toUpperCase()}
                   </button>
-                )}
-              </div>
+                );
+              })}
+              <div className="flex-1 border-b-2 border-ink" aria-hidden />
+            </div>
+
+            <div
+              role="tabpanel"
+              id={`tabpanel-${tab}`}
+              aria-labelledby={`tab-${tab}`}
+              className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4"
+            >
+              {tab === 'eyes' && (
+                <FamilyGrid
+                  families={EYE_FAMILIES}
+                  labels={EYE_FAMILY_LABELS}
+                  value={eyesFamily}
+                  onChange={setEyesFamily}
+                  renderTile={(family) => (
+                    <Face
+                      mood="idle"
+                      color={color}
+                      name=""
+                      traits={{ v: 2, eyesFamily: family, mouthFamily }}
+                      muted
+                      volume={0}
+                      compact
+                    />
+                  )}
+                />
+              )}
+              {tab === 'mouth' && (
+                <FamilyGrid
+                  families={MOUTH_FAMILIES}
+                  labels={MOUTH_FAMILY_LABELS}
+                  value={mouthFamily}
+                  onChange={setMouthFamily}
+                  renderTile={(family) => (
+                    <Face
+                      mood="happy"
+                      color={color}
+                      name=""
+                      traits={{ v: 2, eyesFamily, mouthFamily: family }}
+                      muted
+                      volume={0}
+                      compact
+                    />
+                  )}
+                />
+              )}
+              {tab === 'color' && <ColorTab color={color} onChange={setColor} />}
             </div>
           </div>
 
-          {/* MOOD SCRUB — 12 small thumbnails to drive the hero */}
-          <MoodScrubStrip
-            traits={traits}
-            color={color}
-            activeMood={heroMood}
-            onPick={(m) => setLockedMood(m)}
-          />
-
-          {/* FAMILY CAROUSELS */}
-          <FamilyCarousel
-            label="Eyes"
-            families={EYE_FAMILIES}
-            labels={EYE_FAMILY_LABELS}
-            value={eyesFamily}
-            onChange={setEyesFamily}
-            renderTile={(family) => (
-              <Face
-                mood="idle"
-                color={color}
-                name=""
-                traits={{ v: 2, eyesFamily: family, mouthFamily }}
-                muted
-                volume={0}
-                compact
-              />
-            )}
-          />
-
-          <FamilyCarousel
-            label="Mouth"
-            families={MOUTH_FAMILIES}
-            labels={MOUTH_FAMILY_LABELS}
-            value={mouthFamily}
-            onChange={setMouthFamily}
-            renderTile={(family) => (
-              <Face
-                mood="happy"
-                color={color}
-                name=""
-                traits={{ v: 2, eyesFamily, mouthFamily: family }}
-                muted
-                volume={0}
-                compact
-              />
-            )}
-          />
-
-          {/* COLOR */}
-          <div className="px-3 sm:px-6 pb-4 pt-2 flex items-center gap-3 flex-wrap">
-            <span className="font-display text-[10px] tracking-widest opacity-80">COLOR</span>
-            <label className="cursor-pointer">
-              <input
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="w-10 h-10 border-[2.5px] border-ink rounded-lg cursor-pointer"
-                aria-label="Pick personality color"
-              />
-            </label>
-            <input
-              type="text"
-              value={color}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (/^#?[0-9a-fA-F]{0,6}$/.test(v)) {
-                  setColor(v.startsWith('#') ? v : `#${v}`);
-                }
-              }}
-              className="font-mono text-sm border-[2.5px] border-ink rounded-lg px-3 py-2 w-28 bg-white"
-              placeholder="#5599DD"
-              aria-label="Color hex"
-            />
+          {/* RIGHT — all-12 mood preview, always visible */}
+          <div className="flex flex-col min-h-0">
+            <div className="px-3 sm:px-4 pt-3 pb-1 shrink-0">
+              <h3 className="font-display text-[10px] sm:text-xs tracking-widest opacity-80">
+                ▸ ALL 12 MOODS
+              </h3>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {MOOD_KEYS.map((moodKey) => (
+                  <div key={moodKey} className="space-y-1">
+                    <div className="aspect-square">
+                      <Face
+                        mood={moodKey}
+                        color={color}
+                        name=""
+                        traits={traits}
+                        muted
+                        volume={0}
+                        compact
+                      />
+                    </div>
+                    <div className="text-center text-[9px] font-display tracking-wider opacity-70">
+                      {MOODS[moodKey].label.toUpperCase()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -255,7 +251,9 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
           >
             RESET
           </button>
-          {error && <p className="text-red-700 text-xs flex-1 min-w-0 truncate">{error}</p>}
+          {error && (
+            <p className="text-red-700 text-xs flex-1 min-w-0 truncate">{error}</p>
+          )}
           <div className="flex items-center gap-2 ml-auto">
             <button
               type="button"
@@ -282,76 +280,7 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
 
 // -- subcomponents ---------------------------------------------------------
 
-interface MoodScrubStripProps {
-  traits: AgentTraits;
-  color: string;
-  activeMood: MoodKey;
-  onPick: (mood: MoodKey) => void;
-}
-
-// Horizontal strip of all 12 moods. Tapping one locks the hero on that mood;
-// the strip auto-scrolls to keep the active mood centered. Mobile-friendly:
-// scroll-snap, plenty of touch target.
-function MoodScrubStrip({ traits, color, activeMood, onPick }: MoodScrubStripProps) {
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const activeBtnRef = useRef<HTMLButtonElement | null>(null);
-
-  useEffect(() => {
-    // Guarded for jsdom/test envs where scrollIntoView isn't implemented.
-    activeBtnRef.current?.scrollIntoView?.({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'center',
-    });
-  }, [activeMood]);
-
-  return (
-    <div className="px-3 sm:px-6 pb-3">
-      <div
-        ref={scrollerRef}
-        className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-2 -mx-3 sm:-mx-6 px-3 sm:px-6"
-        style={{ scrollbarWidth: 'thin' }}
-      >
-        {MOOD_KEYS.map((m) => {
-          const active = m === activeMood;
-          return (
-            <button
-              key={m}
-              ref={active ? activeBtnRef : undefined}
-              type="button"
-              onClick={() => onPick(m)}
-              aria-pressed={active}
-              aria-label={`Show ${MOODS[m].label}`}
-              className={`snap-center shrink-0 w-14 sm:w-16 border-[2.5px] border-ink rounded-lg p-0.5 bg-paper shadow-brutal-sm transition ${
-                active
-                  ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper -translate-y-[1px]'
-                  : 'opacity-70 hover:opacity-100'
-              }`}
-            >
-              <div className="aspect-square pointer-events-none">
-                <Face
-                  mood={m}
-                  color={color}
-                  name=""
-                  traits={traits}
-                  muted
-                  volume={0}
-                  compact
-                />
-              </div>
-              <div className="text-center text-[8px] sm:text-[9px] tracking-wider font-display truncate px-0.5">
-                {MOODS[m].label.toUpperCase()}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-interface FamilyCarouselProps<F extends string> {
-  label: string;
+interface FamilyGridProps<F extends string> {
   families: readonly F[];
   labels: Record<F, string>;
   value: F;
@@ -359,89 +288,80 @@ interface FamilyCarouselProps<F extends string> {
   renderTile: (family: F) => React.ReactNode;
 }
 
-// Horizontal scroll-snap carousel of family tiles with prev/next buttons for
-// pointer users (touch users just swipe). Scales to any number of families:
-// the strip just gets longer. Each tile is a live mini-Face so the owner sees
-// the family applied to their current color/other-axis selection.
-function FamilyCarousel<F extends string>({
-  label,
+// Grid of family tiles. Scales to N families by adding rows. Each tile is a
+// live mini-Face so the owner sees the family applied to their current color
+// and other-axis selection.
+function FamilyGrid<F extends string>({
   families,
   labels,
   value,
   onChange,
   renderTile,
-}: FamilyCarouselProps<F>) {
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const tileRefs = useRef(new Map<F, HTMLButtonElement>());
-
-  // Keep the active tile centered when the family changes (incl. arrow taps).
-  useEffect(() => {
-    tileRefs.current.get(value)?.scrollIntoView?.({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'center',
-    });
-  }, [value]);
-
-  const stepBy = (dir: -1 | 1) => {
-    const idx = families.indexOf(value);
-    const next = families[(idx + dir + families.length) % families.length]!;
-    onChange(next);
-  };
-
+}: FamilyGridProps<F>) {
   return (
-    <div className="px-3 sm:px-6 pb-3">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-display text-[10px] tracking-widest opacity-80 uppercase">{label}</h3>
-        <div className="flex items-center gap-1">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {families.map((family) => {
+        const active = family === value;
+        return (
           <button
+            key={family}
             type="button"
-            onClick={() => stepBy(-1)}
-            aria-label={`Previous ${label} family`}
-            className="font-display text-xs leading-none w-7 h-7 grid place-items-center border-2 border-ink rounded bg-paper shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition"
+            onClick={() => onChange(family)}
+            aria-pressed={active}
+            className={`border-[2.5px] border-ink rounded-lg p-2 bg-paper shadow-brutal-sm transition ${
+              active
+                ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper -translate-x-[1px] -translate-y-[1px]'
+                : 'opacity-80 hover:opacity-100 hover:-translate-x-[1px] hover:-translate-y-[1px]'
+            }`}
           >
-            ◂
+            <div className="aspect-square pointer-events-none">{renderTile(family)}</div>
+            <div className="text-center text-[10px] mt-1 tracking-wider font-display">
+              {labels[family].toUpperCase()}
+            </div>
           </button>
-          <button
-            type="button"
-            onClick={() => stepBy(1)}
-            aria-label={`Next ${label} family`}
-            className="font-display text-xs leading-none w-7 h-7 grid place-items-center border-2 border-ink rounded bg-paper shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition"
-          >
-            ▸
-          </button>
-        </div>
-      </div>
-      <div
-        ref={scrollerRef}
-        className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-3 sm:-mx-6 px-3 sm:px-6"
-        style={{ scrollbarWidth: 'thin' }}
-      >
-        {families.map((family) => {
-          const active = family === value;
-          return (
-            <button
-              key={family}
-              ref={(el) => {
-                if (el) tileRefs.current.set(family, el);
-                else tileRefs.current.delete(family);
-              }}
-              type="button"
-              onClick={() => onChange(family)}
-              aria-pressed={active}
-              className={`snap-center shrink-0 w-28 sm:w-32 border-[2.5px] border-ink rounded-lg p-2 bg-paper shadow-brutal-sm transition ${
-                active
-                  ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper -translate-x-[1px] -translate-y-[1px]'
-                  : 'opacity-80 hover:opacity-100'
-              }`}
-            >
-              <div className="aspect-square pointer-events-none">{renderTile(family)}</div>
-              <div className="text-center text-[10px] mt-1 tracking-wider font-display">
-                {labels[family].toUpperCase()}
-              </div>
-            </button>
-          );
-        })}
+        );
+      })}
+    </div>
+  );
+}
+
+interface ColorTabProps {
+  color: string;
+  onChange: (value: string) => void;
+}
+
+// Color tab content. Keeps the same picker UX as before but lives in its own
+// tab so EYES/MOUTH stay focused on family selection.
+function ColorTab({ color, onChange }: ColorTabProps) {
+  return (
+    <div className="space-y-4">
+      <p className="text-[11px] opacity-70 leading-snug">
+        Pick a personality color. The face linework auto-flips between
+        ink-on-light and cream-on-dark so every color stays readable.
+      </p>
+      <div className="flex items-center gap-3 flex-wrap">
+        <label className="cursor-pointer">
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-14 h-14 border-[2.5px] border-ink rounded-lg cursor-pointer"
+            aria-label="Pick personality color"
+          />
+        </label>
+        <input
+          type="text"
+          value={color}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (/^#?[0-9a-fA-F]{0,6}$/.test(v)) {
+              onChange(v.startsWith('#') ? v : `#${v}`);
+            }
+          }}
+          className="font-mono text-sm border-[2.5px] border-ink rounded-lg px-3 py-2 w-32 bg-white"
+          placeholder="#5599DD"
+          aria-label="Color hex"
+        />
       </div>
     </div>
   );
