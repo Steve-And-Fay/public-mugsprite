@@ -106,18 +106,30 @@ export interface MoodDelta {
   mouth?: MouthStyle;
 }
 
-// Derived directly from the existing MOODS table. Only `idle` has no override,
-// so an owner's base eyes/mouth flow through unchanged in idle and every other
-// mood imposes its emotion. Keep this in lockstep with MOODS to preserve parity.
+// Each mood only overrides the feature it MUST change to read as that emotion.
+// The other feature flows through from the owner's base traits — so picking
+// "sparkle" eyes makes the agent sparkly across happy, singing, thinking, and
+// idle, while sleepy still closes the eyes because closed-eyes IS sleepy.
+//
+// Rule of thumb for what each mood overrides:
+//  - The eyes carry: sleepy, surprised, sad, silly, error, thinking,
+//    confused, excited, angry. Smile-driven moods (happy, singing) leave
+//    eyes alone.
+//  - The mouth carries: happy, excited, singing, surprised, sad, silly,
+//    sleepy, angry, error. Eye-driven moods (thinking, confused) leave
+//    mouth alone.
+//
+// When MOOD_DELTAS leaves a feature undefined AND traits are null, the
+// renderer falls through to MOODS[mood], preserving original visuals.
 export const MOOD_DELTAS: Record<MoodKey, MoodDelta> = {
   idle: {},
-  happy: { eyes: 'happy', mouth: 'bigSmile' },
+  happy: { mouth: 'bigSmile' },
   excited: { eyes: 'sparkle', mouth: 'bigSmile' },
   silly: { eyes: 'cross', mouth: 'tongueOut' },
-  singing: { eyes: 'happy', mouth: 'singO' },
+  singing: { mouth: 'singO' },
   surprised: { eyes: 'wide', mouth: 'openO' },
-  thinking: { eyes: 'lookUp', mouth: 'smirk' },
-  confused: { eyes: 'asymm', mouth: 'wavy' },
+  thinking: { eyes: 'lookUp' },
+  confused: { eyes: 'asymm' },
   sleepy: { eyes: 'closed', mouth: 'tinyO' },
   sad: { eyes: 'sad', mouth: 'frown' },
   angry: { eyes: 'narrow', mouth: 'flat' },

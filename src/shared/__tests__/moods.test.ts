@@ -44,10 +44,8 @@ describe('resolveFaceParts — owner traits override the idle defaults only', ()
   });
 
   it('expressive moods still impose their delta over owner traits', () => {
-    // The owner wants button-style mouths and asymm eyes — but `sleepy` must
-    // still show closed eyes and a tinyO mouth, otherwise sleepiness doesn't
-    // read. The character base only shows through where the mood doesn't
-    // declare an override (i.e. idle).
+    // sleepy and sad override BOTH features — closed/tinyO and sad/frown are
+    // load-bearing emotional signals. The owner's base never wins here.
     const traits = { v: 1, baseEyes: 'wide', baseMouth: 'smirk' } as const;
     expect(resolveFaceParts('sleepy', traits)).toEqual({
       eyes: 'closed',
@@ -58,6 +56,28 @@ describe('resolveFaceParts — owner traits override the idle defaults only', ()
       eyes: 'sad',
       mouth: 'frown',
       brows: 'sad',
+    });
+  });
+
+  it('partial-override moods leak the owner base through the un-overridden feature', () => {
+    // The whole point of partial overrides: if the owner picks sparkle eyes
+    // and a wavy mouth, they should see those traits across moods that DON'T
+    // strictly need to override that feature to read emotionally.
+    const traits = { v: 1, baseEyes: 'sparkle', baseMouth: 'wavy' } as const;
+
+    // happy/singing only override mouth — owner's sparkle eyes flow through.
+    expect(resolveFaceParts('happy', traits).eyes).toBe('sparkle');
+    expect(resolveFaceParts('singing', traits).eyes).toBe('sparkle');
+
+    // thinking/confused only override eyes — owner's wavy mouth flows through.
+    expect(resolveFaceParts('thinking', traits).mouth).toBe('wavy');
+    expect(resolveFaceParts('confused', traits).mouth).toBe('wavy');
+
+    // idle overrides nothing — both base traits flow through.
+    expect(resolveFaceParts('idle', traits)).toEqual({
+      eyes: 'sparkle',
+      mouth: 'wavy',
+      brows: 'none',
     });
   });
 });
