@@ -130,7 +130,7 @@ describe('MugBuilder', () => {
         onDismiss={() => {}}
       />,
     );
-    expect(screen.getByRole('button', { name: /reset to built-in/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'RESET' })).toBeDisabled();
   });
 
   it('Reset sends null traits when the agent has been customized', async () => {
@@ -148,7 +148,7 @@ describe('MugBuilder', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /reset to built-in/i }));
+    await user.click(screen.getByRole('button', { name: 'RESET' }));
     await waitFor(() => {
       expect(resetMock).toHaveBeenCalledWith('agent-1', null, 'owner');
     });
