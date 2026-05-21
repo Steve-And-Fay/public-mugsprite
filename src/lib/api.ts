@@ -87,9 +87,26 @@ export const api = {
       ownerToken,
     }),
 
-  // Pass `null` to clear the customization — the renderer falls back to the
-  // built-in face.
-  updateAgentTraits: (agentId: string, traits: AgentTraits | null, ownerToken: string) =>
+  // Pass `null` traits to clear the customization — the renderer falls back
+  // to the built-in face. Pass color to update the personality color. Either
+  // (or both) may be present; at least one must be.
+  updateAgent: (
+    agentId: string,
+    patch: { traits?: AgentTraits | null; color?: string },
+    ownerToken: string,
+  ) =>
+    request<{ agent: Agent }>(`/api/agents/${encodeURIComponent(agentId)}`, {
+      method: 'PATCH',
+      ownerToken,
+      body: JSON.stringify(patch),
+    }),
+
+  // Convenience wrapper kept for backward compat with existing call sites.
+  updateAgentTraits: (
+    agentId: string,
+    traits: AgentTraits | null,
+    ownerToken: string,
+  ) =>
     request<{ agent: Agent }>(`/api/agents/${encodeURIComponent(agentId)}`, {
       method: 'PATCH',
       ownerToken,

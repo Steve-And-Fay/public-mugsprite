@@ -7,11 +7,13 @@ import type { Agent } from '@shared/types';
 
 vi.mock('../../lib/api', () => ({
   api: {
+    updateAgent: vi.fn(),
     updateAgentTraits: vi.fn(),
   },
 }));
 
-const updateMock = api.updateAgentTraits as unknown as ReturnType<typeof vi.fn>;
+const updateMock = api.updateAgent as unknown as ReturnType<typeof vi.fn>;
+const resetMock = api.updateAgentTraits as unknown as ReturnType<typeof vi.fn>;
 
 function sampleAgent(overrides: Partial<Agent> = {}): Agent {
   return {
@@ -32,6 +34,7 @@ function sampleAgent(overrides: Partial<Agent> = {}): Agent {
 
 beforeEach(() => {
   updateMock.mockReset();
+  resetMock.mockReset();
 });
 
 afterEach(() => {
@@ -92,7 +95,7 @@ describe('MugBuilder', () => {
     await waitFor(() => {
       expect(updateMock).toHaveBeenCalledWith(
         'agent-1',
-        { v: 1, baseEyes: 'sparkle', baseMouth: 'wavy' },
+        { traits: { v: 1, baseEyes: 'sparkle', baseMouth: 'wavy' }, color: '#5599DD' },
         'owner-token',
       );
     });
@@ -132,7 +135,7 @@ describe('MugBuilder', () => {
   it('Reset sends null traits when the agent has been customized', async () => {
     const user = userEvent.setup();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    updateMock.mockResolvedValue({ agent: sampleAgent({ traits: null }) });
+    resetMock.mockResolvedValue({ agent: sampleAgent({ traits: null }) });
     const onDismiss = vi.fn();
 
     render(
@@ -146,7 +149,7 @@ describe('MugBuilder', () => {
 
     await user.click(screen.getByRole('button', { name: /reset to built-in/i }));
     await waitFor(() => {
-      expect(updateMock).toHaveBeenCalledWith('agent-1', null, 'owner');
+      expect(resetMock).toHaveBeenCalledWith('agent-1', null, 'owner');
     });
     expect(onDismiss).toHaveBeenCalled();
   });

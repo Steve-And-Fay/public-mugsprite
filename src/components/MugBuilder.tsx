@@ -85,7 +85,14 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
     setSaving(true);
     try {
       const parsed = AgentTraitsSchema.parse(traits);
-      const result = await api.updateAgentTraits(agent.id, parsed, ownerToken);
+      // Send color alongside traits so the picker actually persists. The
+      // server emits separate 'color' and 'traits' events; both flow back
+      // through SSE within ~1s.
+      const result = await api.updateAgent(
+        agent.id,
+        { traits: parsed, color },
+        ownerToken,
+      );
       onSaved(result.agent);
       onDismiss();
     } catch (err) {
@@ -244,8 +251,7 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                   aria-label="Color hex"
                 />
                 <p className="text-[10px] opacity-60 leading-tight">
-                  Color stays per-agent and is saved separately.
-                  The builder uses it for the live preview only.
+                  The personality color saves with this character.
                 </p>
               </div>
             </section>

@@ -10,6 +10,7 @@ import {
   getAgent,
   getRoomWithToken,
   touchRoom,
+  updateAgentColor,
   updateAgentTraits,
 } from './_lib/db';
 import {
@@ -31,10 +32,17 @@ const CreateAgentBody = z.object({
   color: HexColorSchema,
 });
 
-// `null` clears the customization; the renderer falls back to the built-in face.
-const UpdateAgentBody = z.object({
-  traits: AgentTraitsSchema.nullable(),
-});
+// `null` traits clears the customization; the renderer falls back to the
+// built-in face. Color is optional so callers can update either field
+// independently — at least one must be present.
+const UpdateAgentBody = z
+  .object({
+    traits: AgentTraitsSchema.nullable().optional(),
+    color: HexColorSchema.optional(),
+  })
+  .refine((v) => v.traits !== undefined || v.color !== undefined, {
+    message: 'at least one of traits or color must be provided',
+  });
 
 export default async (req: Request): Promise<Response> => {
   try {
@@ -119,18 +127,36 @@ async function handlePatch(agentId: string, req: Request): Promise<Response> {
   const parsed = await readJson(req, UpdateAgentBody);
   if (parsed instanceof Response) return parsed;
 
-  const updated = await updateAgentTraits(agentId, parsed.traits);
-  if (!updated) return badRequest('failed to update agent');
+  // Apply each field independently and emit a discrete event per change so
+  // SSE consumers can react to them with the existing single-purpose reducers
+  // (color update + traits update) rather than a combined "agent.updated".
+  let latest = agent;
 
-  await appendEvent({
-    roomId: agent.roomId,
-    agentId: agent.id,
-    kind: 'traits',
-    payload: { traits: parsed.traits },
-  });
-  await touchRoom(agent.roomId);
+  if (parsed.color !== undefined && parsed.color !== latest.color) {
+    await updateAgentColor(agentId, parsed.color);
+    await appendEvent({
+      roomId: latest.roomId,
+      agentId: latest.id,
+      kind: 'color',
+      payload: { color: parsed.color },
+    });
+    latest = { ...latest, color: parsed.color };
+  }
 
-  return ok({ agent: updated });
+  if (parsed.traits !== undefined) {
+    const updated = await updateAgentTraits(agentId, parsed.traits);
+    if (!updated) return badRequest('failed to update agent traits');
+    await appendEvent({
+      roomId: latest.roomId,
+      agentId: latest.id,
+      kind: 'traits',
+      payload: { traits: parsed.traits },
+    });
+    latest = updated;
+  }
+
+  await touchRoom(latest.roomId);
+  return ok({ agent: latest });
 }
 
 async function handleDelete(agentId: string, req: Request): Promise<Response> {
