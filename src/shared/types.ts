@@ -26,7 +26,7 @@ export interface Room {
   lastActiveAt: string;
   // Hard expiry boundary. Past this, MCP tool calls return room_expired and the
   // dashboard renders the expired card. Renewable via the owner panel or the
-  // mugsprite.renew_room MCP tool.
+  // mugsprite_renew_room MCP tool.
   expiresAt: string;
 }
 

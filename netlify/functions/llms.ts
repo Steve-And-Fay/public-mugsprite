@@ -63,7 +63,7 @@ Endpoint: \`${origin}/mcp\` — Streamable HTTP transport (2025-03-26 spec), JSO
 
 All four tools take \`name\` as a required arg so the server knows which agent in the room is reporting.
 
-### \`mugsprite.register({ name, color })\`
+### \`mugsprite_register({ name, color })\`
 
 Idempotent within the room. Upserts an agent row by (room_id, name); subsequent calls with the same name update color but never duplicate. Call ONCE per agent at session start.
 
@@ -72,7 +72,7 @@ Idempotent within the room. Upserts an agent row by (room_id, name); subsequent 
 
 Returns \`{ agentId, roomId, name, color, mood }\`.
 
-### \`mugsprite.set_mood({ name, mood, status })\`
+### \`mugsprite_set_mood({ name, mood, status })\`
 
 Set the agent's current expression AND a short status blurb. Call before AND after every meaningful action — the dashboard shrinks faces 2% per minute of silence and despawns them after 30 minutes.
 
@@ -80,20 +80,20 @@ Set the agent's current expression AND a short status blurb. Call before AND aft
 - \`mood\` — one of: \`idle\`, \`happy\`, \`excited\`, \`silly\`, \`singing\`, \`surprised\`, \`thinking\`, \`confused\`, \`sleepy\`, \`sad\`, \`angry\`, \`error\`.
 - \`status\` — ≤60-char present-tense blurb. Specific verbs win ("reading auth.ts", "stuck on a flaky test"). Vague statuses ("thinking", "working") are noise.
 
-### \`mugsprite.speak({ name, text })\`
+### \`mugsprite_speak({ name, text })\`
 
 Show a speech bubble and trigger Web Speech API TTS in the dashboard. Reserve for findings, questions, and wins — not for narrating every step. Aim for one \`speak\` per ~5–10 \`set_mood\` calls.
 
 - \`name\` — the agent's registered name in this room.
 - \`text\` — 1–500 chars.
 
-### \`mugsprite.leave({ name })\`
+### \`mugsprite_leave({ name })\`
 
 Soft-leave: the agent disappears from the grid but its row remains. Calling any other tool brings it back. Use at session end.
 
 ## Multi-agent / subagent pattern
 
-A parent agent and any subagents it spawns share the SAME room bearer. To put a subagent on the grid as a distinct face, have it call \`mugsprite.register({ name: "PARENT-scout", color: "#..." })\` with its own name. To keep a subagent invisible, it simply skips registration — only the parent's face shows.
+A parent agent and any subagents it spawns share the SAME room bearer. To put a subagent on the grid as a distinct face, have it call \`mugsprite_register({ name: "PARENT-scout", color: "#..." })\` with its own name. To keep a subagent invisible, it simply skips registration — only the parent's face shows.
 
 ## Lifetime
 
@@ -137,10 +137,10 @@ Endpoint: \`${origin}/mcp\` (Streamable HTTP, JSON-RPC 2.0 over POST).
 
 All take \`name\` as a required arg so the server knows which agent is reporting.
 
-- \`mugsprite.register({ name, color })\` — call once at session start. Idempotent by (room_id, name).
-- \`mugsprite.set_mood({ name, mood, status })\` — call before/after every meaningful action. \`mood\` is one of: idle, happy, excited, silly, singing, surprised, thinking, confused, sleepy, sad, angry, error. \`status\` is a ≤60-char present-tense blurb.
-- \`mugsprite.speak({ name, text })\` — 1–500 chars. Triggers TTS on the dashboard. Use sparingly.
-- \`mugsprite.leave({ name })\` — soft-leave; call any tool again to come back.
+- \`mugsprite_register({ name, color })\` — call once at session start. Idempotent by (room_id, name).
+- \`mugsprite_set_mood({ name, mood, status })\` — call before/after every meaningful action. \`mood\` is one of: idle, happy, excited, silly, singing, surprised, thinking, confused, sleepy, sad, angry, error. \`status\` is a ≤60-char present-tense blurb.
+- \`mugsprite_speak({ name, text })\` — 1–500 chars. Triggers TTS on the dashboard. Use sparingly.
+- \`mugsprite_leave({ name })\` — soft-leave; call any tool again to come back.
 
 ## Watching
 

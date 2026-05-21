@@ -24,12 +24,12 @@ For the MVP, the SSE stream pumps from the `events` table using a 1-second polli
 
 ## MCP Tools Exposed
 
-All tools are namespaced `mugsprite.*`. Each call writes to `agents` and appends to `events` in one round-trip.
+All tools are prefixed `mugsprite_*` (underscore — some MCP clients reject dots in tool names). Each call writes to `agents` and appends to `events` in one round-trip.
 
-- `mugsprite.register(name, color)` — idempotent; agents call once at startup. Auth via per-agent bearer token in the `Authorization` header.
-- `mugsprite.set_mood(mood)` — one of the 12 moods listed above.
-- `mugsprite.speak(text)` — show a speech bubble and trigger TTS in the dashboard. Web Speech API runs client-side; server doesn't synthesize.
-- `mugsprite.leave()` — remove from grid cleanly.
+- `mugsprite_register(name, color)` — idempotent; agents call once at startup. Auth via per-agent bearer token in the `Authorization` header.
+- `mugsprite_set_mood(mood)` — one of the 12 moods listed above.
+- `mugsprite_speak(text)` — show a speech bubble and trigger TTS in the dashboard. Web Speech API runs client-side; server doesn't synthesize.
+- `mugsprite_leave()` — remove from grid cleanly.
 
 **Auth model (Jitsi-style):**
 - Knowing the room slug is enough to view the dashboard read-only.
@@ -66,7 +66,7 @@ db/schema.sql                   rooms, agents, events
 - **Idempotent agent registration.** If an agent calls `register` with a token that already corresponds to an agent, return the existing `agent_id`. Don't create duplicates.
 - **Color fade transition** when an agent's color changes — CSS `transition: background-color 1.4s` on the avatar background.
 - **Token security:** generate with `crypto.getRandomValues` → 32 bytes → base64url. Never log full tokens. Store as-is for v1 (hash for v2).
-- **Use Web Speech API client-side for TTS.** Don't synthesize on the server. `mugsprite.speak` just pushes the text; the browser reads it.
+- **Use Web Speech API client-side for TTS.** Don't synthesize on the server. `mugsprite_speak` just pushes the text; the browser reads it.
 
 ## Out of Scope for v1
 
@@ -79,7 +79,7 @@ db/schema.sql                   rooms, agents, events
 ## Stretch Goals (called out, not built)
 
 - Spotlight / hero layout when one agent is actively speaking.
-- `mugsprite.thinking(reasoning)` tool that shows internal monologue in a separate bubble.
+- `mugsprite_thinking(reasoning)` tool that shows internal monologue in a separate bubble.
 - Per-agent voice picker (different Web Speech voices per agent).
 - Room ownership transfer / multiple owners.
 - Webhook OUT — push events to an external URL when an agent changes state (closes the loop for n8n flows).
@@ -91,6 +91,6 @@ A user can: visit the site → click "Create room" → land on a dashboard with 
 ## Working Notes for Claude Code
 
 - The `Face` component name is descriptive of the SVG primitive, not branding. Don't rename it.
-- The MCP tool namespace is `mugsprite.*`. Don't propose `face.*` or `mug.*`.
+- The MCP tool prefix is `mugsprite_*` (underscore form — dotted names like `mugsprite.register` get filtered by stricter MCP clients like Cursor). Don't propose `face_*` or `mug_*`.
 - The visual style is original work — generic flat-2D character primitives (ellipses, paths, basic SMIL animations). Don't introduce comparisons to specific licensed characters in code comments, docs, or marketing copy.
 - Run `npm run verify` (typecheck + lint + test) before declaring work done.

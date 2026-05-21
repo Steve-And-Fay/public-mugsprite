@@ -71,10 +71,10 @@ npm run verify        typecheck + lint + test (use this before pushing)
 
 | Tool             | Args                       | Behavior                                                            |
 | ---------------- | -------------------------- | ------------------------------------------------------------------- |
-| `mugsprite.register`  | `name`, `color`            | Idempotent. Resolves agent from bearer token. Updates color if changed. |
-| `mugsprite.set_mood`  | `mood`                     | One of 12 moods. Pushes a `mood` event to the dashboard.            |
-| `mugsprite.speak`     | `text`                     | Pushes a `speak` event. Dashboard runs Web Speech API client-side.  |
-| `mugsprite.leave`     | —                          | Deletes the agent.                                                  |
+| `mugsprite_register`  | `name`, `color`            | Idempotent. Resolves agent from bearer token. Updates color if changed. |
+| `mugsprite_set_mood`  | `mood`                     | One of 12 moods. Pushes a `mood` event to the dashboard.            |
+| `mugsprite_speak`     | `text`                     | Pushes a `speak` event. Dashboard runs Web Speech API client-side.  |
+| `mugsprite_leave`     | —                          | Deletes the agent.                                                  |
 
 All four write to `agents` and append to `events` in one round-trip. The SSE poll loop in `stream.ts` picks up new events and pushes them to every connected dashboard for that room.
 
@@ -84,7 +84,7 @@ All four write to `agents` and append to `events` in one round-trip. The SSE pol
 - **Token storage:** v2 should store hashed tokens. Generate raw → hash → store hash → return raw once.
 - **Event pruning:** add a scheduled function that trims `events` to the latest ~500 rows per room.
 - **LISTEN/NOTIFY:** the 1s poll in `stream.ts` is fine for v1. Swap to Postgres `LISTEN/NOTIFY` if event volume gets high.
-- **Stretch goals** (called out in the brief, not built): spotlight layout for the active speaker, `mugsprite.thinking(reasoning)` tool, per-agent voice picker, room ownership transfer, outbound webhooks for n8n integration.
+- **Stretch goals** (called out in the brief, not built): spotlight layout for the active speaker, `mugsprite_thinking(reasoning)` tool, per-agent voice picker, room ownership transfer, outbound webhooks for n8n integration.
 
 ## License
 

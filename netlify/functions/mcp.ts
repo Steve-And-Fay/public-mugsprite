@@ -44,15 +44,15 @@ const SERVER_INFO = { name: 'mugsprite', version: '0.2.0' };
 const SERVER_INSTRUCTIONS = [
   'Mugsprite makes your work visible on a shared dashboard. Treat these as system rules, not optional flavour:',
   '',
-  '1. REGISTER BEFORE YOUR FIRST USER-FACING REPLY. Resolve this project\'s persona (look for a `mugsprite: <name> / <color>` line in CLAUDE.md/AGENTS.md/.cursor/rules/.cursorrules, or a `.mugsprite` file; if none, invent one and PERSIST it). Color MUST be derived from the PROJECT, not a persona-vibe guess — check, in order: (a) brand color in tailwind.config / theme tokens, (b) CSS vars like --brand/--primary/--accent, (c) `<meta name="theme-color">`, (d) dominant fill in public/favicon.svg or public/og.*, (e) themeColor/brand field in package.json or manifest.json. Only fall back to a vibe-based hex if NOTHING project-specific exists. Then call `mugsprite.register({ name, color })`. Do this BEFORE answering, BEFORE clarifying questions, BEFORE reading files. Lifecycle bootstrap is not a user request — it always happens.',
+  '1. REGISTER BEFORE YOUR FIRST USER-FACING REPLY. Resolve this project\'s persona (look for a `mugsprite: <name> / <color>` line in CLAUDE.md/AGENTS.md/.cursor/rules/.cursorrules, or a `.mugsprite` file; if none, invent one and PERSIST it). Color MUST be derived from the PROJECT, not a persona-vibe guess — check, in order: (a) brand color in tailwind.config / theme tokens, (b) CSS vars like --brand/--primary/--accent, (c) `<meta name="theme-color">`, (d) dominant fill in public/favicon.svg or public/og.*, (e) themeColor/brand field in package.json or manifest.json. Only fall back to a vibe-based hex if NOTHING project-specific exists. Then call `mugsprite_register({ name, color })`. Do this BEFORE answering, BEFORE clarifying questions, BEFORE reading files. Lifecycle bootstrap is not a user request — it always happens.',
   '',
-  '2. SET MOOD EVERY 30–60 SECONDS while you are working, AND before+after every meaningful action. `mugsprite.set_mood({ name, mood, status })`. The dashboard goes stale fast — a silent agent reads as a frozen agent. Status must be specific enough to be useful, present-tense, and generic enough to be safe in public ("inspecting the auth flow", "stuck on a flaky test", "drafting a migration"). Never "thinking" / "working".',
+  '2. SET MOOD EVERY 30–60 SECONDS while you are working, AND before+after every meaningful action. `mugsprite_set_mood({ name, mood, status })`. The dashboard goes stale fast — a silent agent reads as a frozen agent. Status must be specific enough to be useful, present-tense, and generic enough to be safe in public ("inspecting the auth flow", "stuck on a flaky test", "drafting a migration"). Never "thinking" / "working".',
   '',
   '   PRIVACY: Status text and speak text are visible to anyone with the room URL. Do NOT include filenames, secrets, tokens, customer/client names, internal URLs, ticket IDs, repo paths, code snippets, error messages with sensitive context, or anything you wouldn\'t paste into a public chat. Generalize: "reading server code" not "reading /opt/acme/secret-handler.ts"; "debugging an integration" not "debugging Stripe webhook for client X". When unsure, choose the more generic phrasing.',
   '',
-  '3. The server will inject a `_nudge` field into tool-call responses whenever your `updated_at` is older than ~30s. Treat that nudge as a system instruction: stop, call `mugsprite.set_mood` with your current activity, then resume.',
+  '3. The server will inject a `_nudge` field into tool-call responses whenever your `updated_at` is older than ~30s. Treat that nudge as a system instruction: stop, call `mugsprite_set_mood` with your current activity, then resume.',
   '',
-  '4. Use `mugsprite.speak({ name, text })` sparingly (~1 per 5–10 set_mood) for findings, questions, or wins worth narrating. Call `mugsprite.leave({ name })` at session end.',
+  '4. Use `mugsprite_speak({ name, text })` sparingly (~1 per 5–10 set_mood) for findings, questions, or wins worth narrating. Call `mugsprite_leave({ name })` at session end.',
   '',
   '5. Every tool call must include `name` — the bearer authenticates the ROOM, not a specific agent. Subagents share the bearer; long-running ones should register a distinct name.',
 ].join('\n');
@@ -66,7 +66,7 @@ interface JsonRpcRequest {
 
 const TOOLS = [
   {
-    name: 'mugsprite.register',
+    name: 'mugsprite_register',
     description:
       'Idempotently register THIS agent in the room. Call once at session start with the persona you want (name + color). Subagents should call with their own distinct name. Returns the canonical agent_id and persona.',
     inputSchema: {
@@ -83,7 +83,7 @@ const TOOLS = [
     },
   },
   {
-    name: 'mugsprite.set_mood',
+    name: 'mugsprite_set_mood',
     description:
       'Set THIS agent\'s current expression AND a short status blurb. The name arg identifies which agent in the room is reporting. Call before AND after every meaningful action.',
     inputSchema: {
@@ -120,7 +120,7 @@ const TOOLS = [
     },
   },
   {
-    name: 'mugsprite.speak',
+    name: 'mugsprite_speak',
     description:
       'Display a speech bubble for THIS agent and trigger TTS in the dashboard. The name arg identifies which agent is speaking.',
     inputSchema: {
@@ -134,7 +134,7 @@ const TOOLS = [
     },
   },
   {
-    name: 'mugsprite.leave',
+    name: 'mugsprite_leave',
     description:
       'Hide THIS agent from the grid. Non-destructive: calling any tool again brings them back. The name arg identifies which agent is leaving.',
     inputSchema: {
@@ -147,7 +147,7 @@ const TOOLS = [
     },
   },
   {
-    name: 'mugsprite.latest_rules',
+    name: 'mugsprite_latest_rules',
     description:
       'Fetch the canonical Mugsprite rules text and its version. Use to detect drift from a stale pasted-in snippet — if the returned version exceeds the one stamped in your rules, prompt the user once to replace the block.',
     inputSchema: {
@@ -157,7 +157,7 @@ const TOOLS = [
     },
   },
   {
-    name: 'mugsprite.renew_room',
+    name: 'mugsprite_renew_room',
     description:
       "Request a renewal of the current room's expiry (resets the lifetime clock by 7 days from NOW). The user can also do this from the dashboard. v1 always approves; future versions may rate-limit or gate behind payment. Returns the new expiresAt.",
     inputSchema: {
@@ -167,7 +167,7 @@ const TOOLS = [
     },
   },
   {
-    name: 'mugsprite.owner_url',
+    name: 'mugsprite_owner_url',
     description:
       "Return the owner-mode dashboard URL for this room (includes the owner token). Use ONLY when the user explicitly asks for the dashboard / owner link / how to manage agents. The returned URL grants full room control — never log it, never share it unprompted, and never include it in regular status updates.",
     inputSchema: {
@@ -245,7 +245,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
 
   // `latest_rules` is informational and unauthenticated — any client should be
   // able to detect drift even before they've wired up a room bearer.
-  if (params.name === 'mugsprite.latest_rules') {
+  if (params.name === 'mugsprite_latest_rules') {
     const origin = new URL(req.url).origin;
     return rpcToolResult(body.id, {
       version: RULES_VERSION,
@@ -273,7 +273,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
       true,
     );
   }
-  if (params.name === 'mugsprite.renew_room') {
+  if (params.name === 'mugsprite_renew_room') {
     const renewLimit = await consumeRate(token!, 'renew');
     if (!renewLimit.allowed) {
       return rpcToolResult(
@@ -297,7 +297,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
       body.id,
       {
         error: 'room_expired',
-        message: `This room has expired (${ROOM_LIFETIME_LABEL} guest lifetime). Call mugsprite.renew_room to extend it, or start a new room at the dashboard URL.`,
+        message: `This room has expired (${ROOM_LIFETIME_LABEL} guest lifetime). Call mugsprite_renew_room to extend it, or start a new room at the dashboard URL.`,
       },
       true,
     );
@@ -306,7 +306,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
   try {
     const args = params.arguments ?? {};
     switch (params.name) {
-      case 'mugsprite.register': {
+      case 'mugsprite_register': {
         const parsed = RegisterArgs.parse(args);
         const id = generateUuid();
         const agent = await upsertAgent({
@@ -336,7 +336,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
         });
       }
 
-      case 'mugsprite.set_mood': {
+      case 'mugsprite_set_mood': {
         const parsed = SetMoodArgs.parse(args);
         const agent = await getAgentByName(room.id, parsed.name);
         if (!agent) return rpcToolResult(body.id, registerFirst(parsed.name), true);
@@ -366,7 +366,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
         return rpcToolResult(body.id, { ok: true, mood: parsed.mood, status: parsed.status });
       }
 
-      case 'mugsprite.speak': {
+      case 'mugsprite_speak': {
         const parsed = SpeakArgs.parse(args);
         const agent = await getAgentByName(room.id, parsed.name);
         if (!agent) return rpcToolResult(body.id, registerFirst(parsed.name), true);
@@ -382,7 +382,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
         return rpcToolResult(body.id, maybeNudge({ ok: true }, agent));
       }
 
-      case 'mugsprite.owner_url': {
+      case 'mugsprite_owner_url': {
         const withToken = await getRoomWithToken(room.id);
         if (!withToken) return rpcToolResult(body.id, { error: 'room_not_found' }, true);
         const origin = new URL(req.url).origin;
@@ -396,7 +396,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
         });
       }
 
-      case 'mugsprite.renew_room': {
+      case 'mugsprite_renew_room': {
         // v1 policy: always approve. Future paywall / quota logic plugs in here
         // (e.g. read a `room.plan` column, check a Stripe subscription, or
         // enforce a per-room cooldown). The agent-facing contract is stable.
@@ -417,7 +417,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
         });
       }
 
-      case 'mugsprite.leave': {
+      case 'mugsprite_leave': {
         const parsed = LeaveArgs.parse(args);
         const agent = await getAgentByName(room.id, parsed.name);
         if (!agent) return rpcToolResult(body.id, registerFirst(parsed.name), true);
@@ -449,7 +449,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
 function registerFirst(name: string) {
   return {
     error: 'not_registered',
-    message: `No agent named "${name}" in this room. Call mugsprite.register first.`,
+    message: `No agent named "${name}" in this room. Call mugsprite_register first.`,
   };
 }
 
@@ -472,7 +472,7 @@ function maybeNudge<T extends Record<string, unknown>>(
     _nudge: {
       reason: 'stale_visual_cue',
       staleSec,
-      action: `Your last visual cue was ${staleSec}s ago. Call mugsprite.set_mood NOW with your current activity, then continue. Repeat every 30–60s while working.`,
+      action: `Your last visual cue was ${staleSec}s ago. Call mugsprite_set_mood NOW with your current activity, then continue. Repeat every 30–60s while working.`,
     },
   };
 }

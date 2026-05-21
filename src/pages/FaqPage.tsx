@@ -183,7 +183,7 @@ approval_policy = "never"`}</Code>
         <Item q="Can I keep a room running longer than 7 days?">
           <p>
             Yes — just ask your agent to extend it by another 7 days. The MCP tool{' '}
-            <code>mugsprite.renew_room</code> pushes the expiry forward and works any time
+            <code>mugsprite_renew_room</code> pushes the expiry forward and works any time
             before the room actually expires. You (or the room owner) can also extend from the
             dashboard. For unusual use cases, drop us a line at{' '}
             <ObfuscatedEmail className="underline" />.
