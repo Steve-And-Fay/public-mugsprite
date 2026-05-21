@@ -174,6 +174,7 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                           traits={{ v: 1, baseEyes: style, baseMouth: mouth }}
                           muted
                           volume={0}
+                          compact
                         />
                       </div>
                       <div className="text-center text-[9px] mt-1 tracking-wider font-display">
@@ -212,6 +213,7 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                           traits={{ v: 1, baseEyes: eyes, baseMouth: style }}
                           muted
                           volume={0}
+                          compact
                         />
                       </div>
                       <div className="text-center text-[9px] mt-1 tracking-wider font-display">
@@ -273,6 +275,7 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                       traits={traits}
                       muted
                       volume={0}
+                      compact
                     />
                   </div>
                   <div className="text-center text-[9px] font-display tracking-wider opacity-70">

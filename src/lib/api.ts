@@ -41,16 +41,32 @@ async function request<T>(
 
   const res = await fetch(path, { ...init, headers });
   const text = await res.text();
-  const body = text ? (JSON.parse(text) as unknown) : null;
+  // Tolerate non-JSON responses (e.g. function crashed before reaching the
+  // json() helper and Netlify returned a plain-text 500 with a stack trace).
+  // Surfacing the raw text in the error is more useful than a parse error.
+  let body: unknown = null;
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = { raw: text };
+    }
+  }
 
   if (!res.ok) {
     const message =
       body && typeof body === 'object' && 'message' in body
         ? String((body as { message: unknown }).message)
-        : `HTTP ${res.status}`;
+        : body && typeof body === 'object' && 'raw' in body
+          ? truncate(String((body as { raw: unknown }).raw), 240)
+          : `HTTP ${res.status}`;
     throw new ApiError(res.status, message, body);
   }
   return body as T;
+}
+
+function truncate(s: string, n: number): string {
+  return s.length > n ? `${s.slice(0, n - 1)}…` : s;
 }
 
 export const api = {

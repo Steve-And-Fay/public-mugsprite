@@ -57,6 +57,12 @@ interface FaceProps {
   isOwner?: boolean;
   agentId?: string;
   onCustomize?: (agentId: string) => void;
+  // When true, suppresses chrome that's only useful on the live grid: the
+  // mood-name chip in the top-left and the name/status row beneath the tile.
+  // Used by MugBuilder picker thumbnails (the chip on every tile would just
+  // say IDLE and cover the face) and the 12-mood preview (the mood name is
+  // already shown below each tile).
+  compact?: boolean;
 }
 
 // Staleness shrink: 2% per minute, but never below half-size. Faces hold at
@@ -124,6 +130,7 @@ function FaceImpl({
   isOwner = false,
   agentId,
   onCustomize,
+  compact = false,
 }: FaceProps) {
   // Pause the staleness ticker while actively speaking — the badge can't
   // render in that state anyway, and we don't need a re-render every second.
@@ -271,9 +278,11 @@ function FaceImpl({
           }}
         />
 
-        <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[9px] sm:text-[10px] tracking-widest shadow-brutal-sm z-10">
-          {moodDef.label.toUpperCase()}
-        </div>
+        {!compact && (
+          <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[9px] sm:text-[10px] tracking-widest shadow-brutal-sm z-10">
+            {moodDef.label.toUpperCase()}
+          </div>
+        )}
 
         {onDismiss && (
           <button
@@ -410,15 +419,17 @@ function FaceImpl({
         </div>
         </FaceInkContext.Provider>
       </div>
-      <div
-        className="text-center text-[10px] sm:text-[11px] tracking-widest truncate px-1"
-        title={status ? `${name} — ${status}` : name}
-      >
-        <span className="font-display">{name}</span>
-        {status && (
-          <span className="opacity-70 italic tracking-normal normal-case"> — {status}</span>
-        )}
-      </div>
+      {!compact && (
+        <div
+          className="text-center text-[10px] sm:text-[11px] tracking-widest truncate px-1"
+          title={status ? `${name} — ${status}` : name}
+        >
+          <span className="font-display">{name}</span>
+          {status && (
+            <span className="opacity-70 italic tracking-normal normal-case"> — {status}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
