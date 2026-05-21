@@ -816,7 +816,7 @@ function ToonTeeth({ mouth, ink }: { mouth: MouthStyle; ink: string }) {
     talk_o: { startX: 440, endX: 560, y: 700, h: 22, cols: 2 },
     talk_i: { startX: 320, endX: 680, y: 718, h: 16, cols: 6 },
     talk_m: { startX: 380, endX: 620, y: 728, h: 12, cols: 5 },
-    flat: { startX: 360, endX: 640, y: 730, h: 14, cols: 4, fangs: true },
+    flat: { startX: 360, endX: 640, y: 720, h: 14, cols: 4, fangs: true },
   };
 
   const c = config[mouth];
@@ -839,11 +839,22 @@ function ToonTeeth({ mouth, ink }: { mouth: MouthStyle; ink: string }) {
         />
       ))}
       {c.fangs && (
-        // Two pointy fangs hanging from the upper jaw line — signature toon
-        // snarl detail. Triangle paths layered over the rectangular row.
+        // Two pointy fangs hanging well BELOW the mouth line — signature toon
+        // snarl. Drawn larger so they actually read on small face renders,
+        // and shifted outward toward the corners of the mouth.
         <>
-          <path d="M 410 730 L 430 730 L 420 770 Z" fill="#fdf6e3" stroke={ink} strokeWidth={3} />
-          <path d="M 570 730 L 590 730 L 580 770 Z" fill="#fdf6e3" stroke={ink} strokeWidth={3} />
+          <path
+            d="M 390 720 L 430 720 L 410 800 Z"
+            fill="#fdf6e3"
+            stroke={ink}
+            strokeWidth={4}
+          />
+          <path
+            d="M 570 720 L 610 720 L 590 800 Z"
+            fill="#fdf6e3"
+            stroke={ink}
+            strokeWidth={4}
+          />
         </>
       )}
     </>
@@ -1151,10 +1162,11 @@ function BoldBrows({ style }: { style: BrowStyle }) {
 // stripes, whiskers, etc. as new families later without changing callers.
 export function Cheeks({ family }: { family: CheekFamily }) {
   if (family === 'blush') {
+    // Bolder, slightly larger rosy ovals — match reference cuteness factor.
     return (
       <>
-        <ellipse cx={180} cy={620} rx={70} ry={42} fill="#ff9aa2" opacity={0.55} />
-        <ellipse cx={820} cy={620} rx={70} ry={42} fill="#ff9aa2" opacity={0.55} />
+        <ellipse cx={170} cy={640} rx={90} ry={50} fill="#ff7a8f" opacity={0.65} />
+        <ellipse cx={830} cy={640} rx={90} ry={50} fill="#ff7a8f" opacity={0.65} />
       </>
     );
   }

@@ -80,8 +80,8 @@ const pixelMouthPaths: Record<MouthStyle, string> = {
 // family (heavy black outlines, large pupils) for a cohesive bold-cartoon
 // character.
 const toonMouthPaths: Record<MouthStyle, string> = {
-  // Wide curving smile, slightly fatter than the curve-family default.
-  gentleSmile: 'M 310 690 Q 500 830 690 690',
+  // Cute lens smile — a closed shape with body, not just an arc.
+  gentleSmile: 'M 320 690 Q 500 820 680 690 Q 500 760 320 690 Z',
   // Massive toothy grin, wider on the X and deeper on the Y.
   bigSmile: 'M 200 680 Q 500 570 800 680 Q 500 980 200 680 Z',
   // Dramatic curving frown with thick lower edge implied by the deeper dip.
@@ -92,12 +92,12 @@ const toonMouthPaths: Record<MouthStyle, string> = {
   tinyO: 'M 500 720 m -28 0 a 28 32 0 1 0 56 0 a 28 32 0 1 0 -56 0',
   // Thicker flat — implied lip-pressed-together via wider Y span.
   flat: 'M 320 730 Q 500 745 680 730 Q 680 760 500 770 Q 320 760 320 730 Z',
-  // Smirk with stronger asymmetry.
-  smirk: 'M 360 740 Q 460 760 540 720 Q 600 690 640 745',
+  // Smirk — closed asymmetric grin with a little body. Reads as "thinking".
+  smirk: 'M 360 720 Q 460 770 540 730 Q 600 700 640 740 Q 540 760 460 750 Q 380 740 360 720 Z',
   // Tall sustained sing-pose, wider than curve family.
   singO: 'M 500 690 Q 620 640 620 720 Q 620 870 500 870 Q 380 870 380 720 Q 380 640 500 690 Z',
-  // Bigger wavy.
-  wavy: 'M 290 730 Q 370 690 450 730 T 610 730 T 710 730',
+  // Bigger flatter wavy — closed thin ribbon. Reads as "confused".
+  wavy: 'M 280 720 Q 360 690 440 720 T 600 720 T 720 720 Q 720 745 600 745 T 440 745 T 280 745 Z',
   // Tongue-out monster grin.
   tongueOut: 'M 240 670 Q 500 600 760 670 Q 500 920 240 670 Z',
   // Talk poses — exaggerated openings for stronger cadence reads.
