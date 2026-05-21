@@ -50,6 +50,13 @@ interface FaceProps {
   volume?: number;
   // Owner-set persistent visual traits. null/undefined → built-in face.
   traits?: AgentTraits | null;
+  // When true, the owner-only "Customize" affordance is rendered. It appears
+  // as an always-visible badge for agents that have never been customized
+  // (and whose hint hasn't been dismissed), and reverts to a hover-only
+  // button once the owner has either used it or dismissed the hint.
+  isOwner?: boolean;
+  agentId?: string;
+  onCustomize?: (agentId: string) => void;
 }
 
 // Staleness shrink: 2% per minute, but never below half-size. Faces hold at
@@ -114,6 +121,9 @@ function FaceImpl({
   muted = false,
   volume = 1,
   traits = null,
+  isOwner = false,
+  agentId,
+  onCustomize,
 }: FaceProps) {
   // Pause the staleness ticker while actively speaking — the badge can't
   // render in that state anyway, and we don't need a re-render every second.
@@ -193,6 +203,35 @@ function FaceImpl({
   }, [speakingText, muted, volume]);
 
   const resolved = useMemo(() => resolveFaceParts(mood, traits), [mood, traits]);
+
+  // First-time hint: agents that have never been customized show the button as
+  // an always-visible badge until the owner either visits the builder (traits
+  // becomes non-null) or dismisses the hint locally. Dismissal is stored per
+  // agent in localStorage; it never touches the DB.
+  const hintDismissKey = agentId ? `mugsprite:hint-dismissed:${agentId}` : null;
+  const [hintDismissed, setHintDismissed] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || !hintDismissKey) return false;
+    try {
+      return window.localStorage.getItem(hintDismissKey) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const showHint = isOwner && traits === null && !hintDismissed;
+  const showCustomizeButton = isOwner && Boolean(onCustomize) && Boolean(agentId);
+
+  const handleCustomize = () => {
+    if (!agentId || !onCustomize) return;
+    if (hintDismissKey) {
+      try {
+        window.localStorage.setItem(hintDismissKey, '1');
+      } catch {
+        /* private mode / quota — fall back to in-memory dismiss */
+      }
+      setHintDismissed(true);
+    }
+    onCustomize(agentId);
+  };
   const effectiveMouth: MouthStyle = isTalking && talkMouth ? talkMouth : resolved.mouth;
   const faceInk = useMemo(() => inkForBackground(color), [color]);
 
@@ -245,6 +284,24 @@ function FaceImpl({
             className="absolute top-2 right-2 w-6 h-6 sm:w-7 sm:h-7 grid place-items-center bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[11px] sm:text-xs leading-none shadow-brutal-sm z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition"
           >
             ×
+          </button>
+        )}
+
+        {showCustomizeButton && (
+          <button
+            type="button"
+            onClick={handleCustomize}
+            aria-label={`Customize ${name}'s appearance`}
+            title="Customize this mug"
+            className={`absolute z-20 font-display text-[9px] sm:text-[10px] tracking-widest leading-none px-2 py-1 bg-accent-yellow text-ink border-2 border-ink rounded-full shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition ${
+              onDismiss ? 'top-10' : 'top-2'
+            } right-2 ${
+              showHint
+                ? 'opacity-100'
+                : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto'
+            }`}
+          >
+            ✎ {showHint ? 'CUSTOMIZE' : 'EDIT'}
           </button>
         )}
 

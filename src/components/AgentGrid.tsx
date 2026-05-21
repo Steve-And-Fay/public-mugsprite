@@ -9,6 +9,9 @@ interface AgentGridProps {
   muted?: boolean;
   volume?: number;
   isOwner?: boolean;
+  // When provided, each tile renders a Customize button (owner-only) that
+  // calls back with the agent id. The page hooks this up to open the builder.
+  onCustomize?: (agentId: string) => void;
 }
 
 // Responsive grid:
@@ -42,6 +45,7 @@ export function AgentGrid({
   muted = false,
   volume = 1,
   isOwner,
+  onCustomize,
 }: AgentGridProps) {
   const tick = useTick(30_000);
   // Manual dismissals — stores the `updatedAt` value we hid the agent at, so a
@@ -98,6 +102,9 @@ export function AgentGrid({
             muted={muted}
             volume={volume}
             traits={agent.traits}
+            isOwner={isOwner}
+            agentId={agent.id}
+            onCustomize={onCustomize}
           />
         </div>
       </div>
@@ -120,6 +127,9 @@ export function AgentGrid({
           muted={muted}
           volume={volume}
           traits={agent.traits}
+          isOwner={isOwner}
+          agentId={agent.id}
+          onCustomize={onCustomize}
         />
       ))}
     </div>

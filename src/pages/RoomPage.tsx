@@ -5,6 +5,7 @@ import type { Room } from '@shared/types';
 import { api } from '../lib/api';
 import { AgentGrid } from '../components/AgentGrid';
 import { ExpiredCard } from '../components/ExpiredCard';
+import { MugBuilder } from '../components/MugBuilder';
 import { MyDataDisclosure } from '../components/MyDataDisclosure';
 import { OwnerPanel } from '../components/OwnerPanel';
 import { CastButton } from '../components/CastButton';
@@ -38,8 +39,9 @@ function loadAudioPrefs(): AudioPrefs {
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const ownerToken = searchParams.get('owner');
+  const builderAgentId = searchParams.get('builder');
   const [isOwner, setIsOwner] = useState(false);
   const [room, setRoom] = useState<Room | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -264,6 +266,16 @@ export default function RoomPage() {
               muted={audio.muted}
               volume={effectiveVolume}
               isOwner={isOwner}
+              onCustomize={(agentId) => {
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set('builder', agentId);
+                    return next;
+                  },
+                  { replace: true },
+                );
+              }}
             />
           </div>
         </section>
@@ -364,6 +376,30 @@ export default function RoomPage() {
           Connection lost. Reload to reconnect.
         </div>
       )}
+
+      {isOwner && ownerToken && builderAgentId && (() => {
+        const target = agentList.find((a) => a.id === builderAgentId);
+        if (!target) return null;
+        const close = () =>
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev);
+              next.delete('builder');
+              return next;
+            },
+            { replace: true },
+          );
+        return (
+          <MugBuilder
+            agent={target}
+            ownerToken={ownerToken}
+            onSaved={() => {
+              /* SSE pushes the update; local state stays in sync via the reducer. */
+            }}
+            onDismiss={close}
+          />
+        );
+      })()}
     </main>
     </>
   );
