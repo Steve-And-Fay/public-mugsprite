@@ -237,17 +237,61 @@ interface ToolCallParams {
   arguments?: Record<string, unknown>;
 }
 
+// Legacy dotted tool names from v0.1 of the MCP server. Cursor and stricter
+// MCP clients enforce the [a-zA-Z0-9_-]+ pattern from the MCP spec and filter
+// dotted names out, so we switched to underscores. We keep the dotted names
+// accepted here so existing in-flight sessions don't break mid-conversation,
+// and so any cached tool list on a long-running agent keeps working. Every
+// call to a deprecated alias rides a `_deprecation` field in the response
+// nudging the caller to update. Remove the aliases (and this map) once the
+// deprecation window closes — see docs/in-progress for the timeline.
+const DEPRECATED_TOOL_ALIASES: Record<string, string> = {
+  'mugsprite.register': 'mugsprite_register',
+  'mugsprite.set_mood': 'mugsprite_set_mood',
+  'mugsprite.speak': 'mugsprite_speak',
+  'mugsprite.leave': 'mugsprite_leave',
+  'mugsprite.latest_rules': 'mugsprite_latest_rules',
+  'mugsprite.renew_room': 'mugsprite_renew_room',
+  'mugsprite.owner_url': 'mugsprite_owner_url',
+};
+
+function deprecationNotice(originalName: string, canonicalName: string) {
+  return {
+    reason: 'deprecated_tool_name',
+    deprecatedName: originalName,
+    replacement: canonicalName,
+    message: `Tool name "${originalName}" is deprecated — use "${canonicalName}" instead. Dotted names are filtered by some MCP clients (e.g. Cursor). Restart your MCP session to pick up the new tool list.`,
+  };
+}
+
 async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Response> {
   const params = body.params as ToolCallParams | undefined;
   if (!params || typeof params.name !== 'string') {
     return rpcError(body.id ?? null, -32602, 'invalid params');
   }
 
+  // Normalize: route any deprecated dotted alias to its canonical underscore
+  // form, but remember the original so we can attach a deprecation notice to
+  // the response. All handlers below see only the canonical name.
+  const originalName = params.name;
+  const canonicalName = DEPRECATED_TOOL_ALIASES[originalName] ?? originalName;
+  const isDeprecated = canonicalName !== originalName;
+  params.name = canonicalName;
+
+  // Local helper: every response from inside this function flows through here
+  // so deprecation notices ride automatically when the caller used an alias.
+  const toolResult = (data: Record<string, unknown>, isError = false): Response =>
+    rpcToolResult(
+      body.id,
+      isDeprecated ? { ...data, _deprecation: deprecationNotice(originalName, canonicalName) } : data,
+      isError,
+    );
+
   // `latest_rules` is informational and unauthenticated — any client should be
   // able to detect drift even before they've wired up a room bearer.
   if (params.name === 'mugsprite_latest_rules') {
     const origin = new URL(req.url).origin;
-    return rpcToolResult(body.id, {
+    return toolResult({
       version: RULES_VERSION,
       body: buildRulesBody(origin),
     });
@@ -263,8 +307,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
   // token is non-null here — authenticateAgentRoom rejected the null case above.
   const limit = await consumeRate(token!, 'mcp_call');
   if (!limit.allowed) {
-    return rpcToolResult(
-      body.id,
+    return toolResult(
       {
         error: 'rate_limited',
         message: `Too many MCP calls. Retry in ~${limit.retryAfterSec}s.`,
@@ -276,8 +319,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
   if (params.name === 'mugsprite_renew_room') {
     const renewLimit = await consumeRate(token!, 'renew');
     if (!renewLimit.allowed) {
-      return rpcToolResult(
-        body.id,
+      return toolResult(
         {
           error: 'rate_limited',
           message: `Renewal limit reached (${renewLimit.retryAfterSec}s until next allowed).`,
@@ -293,8 +335,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
   // so agents stop reconnecting; the underlying data is retained for an
   // additional 24h before housekeeping deletion.
   if (Date.now() > new Date(room.expiresAt).getTime()) {
-    return rpcToolResult(
-      body.id,
+    return toolResult(
       {
         error: 'room_expired',
         message: `This room has expired (${ROOM_LIFETIME_LABEL} guest lifetime). Call mugsprite_renew_room to extend it, or start a new room at the dashboard URL.`,
@@ -327,7 +368,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
           },
         });
         await touchRoom(room.id);
-        return rpcToolResult(body.id, {
+        return toolResult({
           agentId: agent.id,
           roomId: room.id,
           name: agent.name,
@@ -339,7 +380,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
       case 'mugsprite_set_mood': {
         const parsed = SetMoodArgs.parse(args);
         const agent = await getAgentByName(room.id, parsed.name);
-        if (!agent) return rpcToolResult(body.id, registerFirst(parsed.name), true);
+        if (!agent) return toolResult(registerFirst(parsed.name), true);
         if (agent.leftAt) {
           await markAgentActive(agent.id);
           await appendEvent({
@@ -363,13 +404,13 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
           payload: { mood: parsed.mood, status: parsed.status },
         });
         await touchRoom(room.id);
-        return rpcToolResult(body.id, { ok: true, mood: parsed.mood, status: parsed.status });
+        return toolResult({ ok: true, mood: parsed.mood, status: parsed.status });
       }
 
       case 'mugsprite_speak': {
         const parsed = SpeakArgs.parse(args);
         const agent = await getAgentByName(room.id, parsed.name);
-        if (!agent) return rpcToolResult(body.id, registerFirst(parsed.name), true);
+        if (!agent) return toolResult(registerFirst(parsed.name), true);
         if (agent.leftAt) await markAgentActive(agent.id);
         await updateAgentMessage(agent.id, parsed.text);
         await appendEvent({
@@ -379,16 +420,16 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
           payload: { text: parsed.text },
         });
         await touchRoom(room.id);
-        return rpcToolResult(body.id, maybeNudge({ ok: true }, agent));
+        return toolResult(maybeNudge({ ok: true }, agent));
       }
 
       case 'mugsprite_owner_url': {
         const withToken = await getRoomWithToken(room.id);
-        if (!withToken) return rpcToolResult(body.id, { error: 'room_not_found' }, true);
+        if (!withToken) return toolResult({ error: 'room_not_found' }, true);
         const origin = new URL(req.url).origin;
         const ownerUrl = `${origin}/r/${room.id}?owner=${withToken.ownerToken}`;
         const dashboardUrl = `${origin}/r/${room.id}`;
-        return rpcToolResult(body.id, {
+        return toolResult({
           ownerUrl,
           dashboardUrl,
           ownerToken: withToken.ownerToken,
@@ -402,7 +443,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
         // enforce a per-room cooldown). The agent-facing contract is stable.
         const renewed = await renewRoom(room.id);
         if (!renewed) {
-          return rpcToolResult(body.id, { error: 'renew_failed' }, true);
+          return toolResult({ error: 'renew_failed' }, true);
         }
         await appendEvent({
           roomId: room.id,
@@ -410,7 +451,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
           kind: 'renew',
           payload: { expiresAt: renewed.expiresAt, requestedBy: 'agent' },
         });
-        return rpcToolResult(body.id, {
+        return toolResult({
           ok: true,
           expiresAt: renewed.expiresAt,
           message: `Room renewed — now expires ${renewed.expiresAt}.`,
@@ -420,7 +461,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
       case 'mugsprite_leave': {
         const parsed = LeaveArgs.parse(args);
         const agent = await getAgentByName(room.id, parsed.name);
-        if (!agent) return rpcToolResult(body.id, registerFirst(parsed.name), true);
+        if (!agent) return toolResult(registerFirst(parsed.name), true);
         if (!agent.leftAt) {
           await markAgentLeft(agent.id);
           await appendEvent({
@@ -431,7 +472,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
           });
           await touchRoom(room.id);
         }
-        return rpcToolResult(body.id, maybeNudge({ ok: true, left: true }, agent));
+        return toolResult(maybeNudge({ ok: true, left: true }, agent));
       }
 
       default:
@@ -439,7 +480,7 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
     }
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return rpcToolResult(body.id, { error: 'validation_failed', details: err.flatten() }, true);
+      return toolResult({ error: 'validation_failed', details: err.flatten() }, true);
     }
     console.error('tool call error', err);
     return rpcError(body.id ?? null, -32603, 'internal error');
