@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   AgentTraitsSchema,
+  BROW_FAMILIES,
+  BROW_FAMILY_LABELS,
+  CHEEK_FAMILIES,
+  CHEEK_FAMILY_LABELS,
+  DEFAULT_BROWS_FAMILY,
+  DEFAULT_CHEEKS_FAMILY,
   DEFAULT_EYES_FAMILY,
   DEFAULT_MOUTH_FAMILY,
   EYE_FAMILIES,
@@ -10,6 +16,8 @@ import {
   MOUTH_FAMILIES,
   MOUTH_FAMILY_LABELS,
   type AgentTraits,
+  type BrowFamily,
+  type CheekFamily,
   type EyeFamily,
   type MouthFamily,
 } from '@shared/moods';
@@ -28,17 +36,20 @@ const STARTING_DEFAULTS: AgentTraits = {
   v: 2,
   eyesFamily: DEFAULT_EYES_FAMILY,
   mouthFamily: DEFAULT_MOUTH_FAMILY,
+  browsFamily: DEFAULT_BROWS_FAMILY,
+  cheeksFamily: DEFAULT_CHEEKS_FAMILY,
 };
 
-// Tabs are the scaling primitive — every new customization category (face
-// shape, accessories, pattern) becomes a new tab without restructuring the
-// rest of the UI. Keep TAB_IDS in lockstep with what the tab content switch
-// below handles.
-const TAB_IDS = ['eyes', 'mouth', 'color'] as const;
+// Tabs are the scaling primitive — every new customization category becomes
+// a new tab without restructuring the rest of the UI. Keep TAB_IDS in
+// lockstep with what the tab content switch below handles.
+const TAB_IDS = ['eyes', 'brows', 'mouth', 'cheeks', 'color'] as const;
 type TabId = (typeof TAB_IDS)[number];
 const TAB_LABELS: Record<TabId, string> = {
   eyes: 'Eyes',
+  brows: 'Brows',
   mouth: 'Mouth',
+  cheeks: 'Cheeks',
   color: 'Color',
 };
 
@@ -46,6 +57,12 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
   const starting = agent.traits ?? STARTING_DEFAULTS;
   const [eyesFamily, setEyesFamily] = useState<EyeFamily>(starting.eyesFamily);
   const [mouthFamily, setMouthFamily] = useState<MouthFamily>(starting.mouthFamily);
+  const [browsFamily, setBrowsFamily] = useState<BrowFamily>(
+    starting.browsFamily ?? DEFAULT_BROWS_FAMILY,
+  );
+  const [cheeksFamily, setCheeksFamily] = useState<CheekFamily>(
+    starting.cheeksFamily ?? DEFAULT_CHEEKS_FAMILY,
+  );
   const [color, setColor] = useState<string>(agent.color);
   const [tab, setTab] = useState<TabId>('eyes');
   const [saving, setSaving] = useState(false);
@@ -65,8 +82,8 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
   }, [onDismiss]);
 
   const traits: AgentTraits = useMemo(
-    () => ({ v: 2, eyesFamily, mouthFamily }),
-    [eyesFamily, mouthFamily],
+    () => ({ v: 2, eyesFamily, mouthFamily, browsFamily, cheeksFamily }),
+    [eyesFamily, mouthFamily, browsFamily, cheeksFamily],
   );
 
   const handleSave = async () => {
@@ -187,6 +204,25 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                   )}
                 />
               )}
+              {tab === 'brows' && (
+                <FamilyGrid
+                  families={BROW_FAMILIES}
+                  labels={BROW_FAMILY_LABELS}
+                  value={browsFamily}
+                  onChange={setBrowsFamily}
+                  renderTile={(family) => (
+                    <Face
+                      mood="angry"
+                      color={color}
+                      name=""
+                      traits={{ ...traits, browsFamily: family }}
+                      muted
+                      volume={0}
+                      compact
+                    />
+                  )}
+                />
+              )}
               {tab === 'mouth' && (
                 <FamilyGrid
                   families={MOUTH_FAMILIES}
@@ -198,7 +234,26 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                       mood="happy"
                       color={color}
                       name=""
-                      traits={{ v: 2, eyesFamily, mouthFamily: family }}
+                      traits={{ ...traits, mouthFamily: family }}
+                      muted
+                      volume={0}
+                      compact
+                    />
+                  )}
+                />
+              )}
+              {tab === 'cheeks' && (
+                <FamilyGrid
+                  families={CHEEK_FAMILIES}
+                  labels={CHEEK_FAMILY_LABELS}
+                  value={cheeksFamily}
+                  onChange={setCheeksFamily}
+                  renderTile={(family) => (
+                    <Face
+                      mood="happy"
+                      color={color}
+                      name=""
+                      traits={{ ...traits, cheeksFamily: family }}
                       muted
                       volume={0}
                       compact

@@ -7,7 +7,7 @@ import {
   type MoodKey,
   type MouthStyle,
 } from '@shared/moods';
-import { Accessories, Brows, Eye, Teeth } from './FaceParts';
+import { Accessories, Brows, Cheeks, Eye, Teeth } from './FaceParts';
 import { FaceInkContext, type FaceInk } from './faceInk';
 import { mouthPathFor, tonguePath } from './mouthPaths';
 
@@ -366,16 +366,11 @@ function FaceImpl({
                 <g className="accessories">
                   <Accessories mood={mood} />
                 </g>
-                {resolved.eyesFamily === 'toon' && (
-                  // Cheek blush — soft peachy ovals, signature Toon detail.
-                  // Drawn under everything else so eyes/mouth sit on top.
-                  <g className="cheeks" aria-hidden>
-                    <ellipse cx={180} cy={620} rx={70} ry={42} fill="#ff9aa2" opacity={0.55} />
-                    <ellipse cx={820} cy={620} rx={70} ry={42} fill="#ff9aa2" opacity={0.55} />
-                  </g>
-                )}
+                <g className="cheeks" aria-hidden>
+                  <Cheeks family={resolved.cheeksFamily} />
+                </g>
                 <g className="brows">
-                  <Brows style={resolved.brows} />
+                  <Brows family={resolved.browsFamily} style={resolved.browsExpression} />
                 </g>
                 <g
                   className="leftEye"

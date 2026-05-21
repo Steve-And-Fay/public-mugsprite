@@ -99,7 +99,13 @@ describe('MugBuilder', () => {
       expect(updateMock).toHaveBeenCalledWith(
         'agent-1',
         {
-          traits: { v: 2, eyesFamily: 'pixel', mouthFamily: 'pixel' },
+          traits: {
+            v: 2,
+            eyesFamily: 'pixel',
+            mouthFamily: 'pixel',
+            browsFamily: 'default',
+            cheeksFamily: 'none',
+          },
           color: '#5599DD',
         },
         'owner-token',

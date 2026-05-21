@@ -1,5 +1,7 @@
 import type {
+  BrowFamily,
   BrowStyle,
+  CheekFamily,
   EyeFamily,
   EyeStyle,
   MoodKey,
@@ -848,7 +850,16 @@ function ToonTeeth({ mouth, ink }: { mouth: MouthStyle; ink: string }) {
   );
 }
 
-export function Brows({ style }: { style: BrowStyle }) {
+// Brows dispatcher: pick the family-specific renderer, hand it the
+// mood-driven expression. Every family must implement every BrowStyle key.
+export function Brows({ family, style }: { family: BrowFamily; style: BrowStyle }) {
+  if (family === 'bold') return <BoldBrows style={style} />;
+  return <ClassicBrows style={style} />;
+}
+
+// "Classic" brow family — the original Mugsprite brows: thin Bezier arcs and
+// straight lines. Pairs naturally with Round / Curve.
+function ClassicBrows({ style }: { style: BrowStyle }) {
   const { ink } = useFaceInk();
   switch (style) {
     case 'sad':
@@ -987,6 +998,167 @@ export function Brows({ style }: { style: BrowStyle }) {
     default:
       return null;
   }
+}
+
+// "Bold" brow family — chunky cartoon-monster brows. Heavier stroke widths
+// (28px vs Classic's 20px) and slightly blockier shapes. Pairs with the
+// Toon eye family but works on top of any eye family.
+function BoldBrows({ style }: { style: BrowStyle }) {
+  const { ink } = useFaceInk();
+  const SW = 28;
+  switch (style) {
+    case 'sad':
+      return (
+        <>
+          <path
+            d="M 230 295 Q 320 235 400 280"
+            stroke={ink}
+            strokeWidth={SW}
+            strokeLinecap="round"
+            fill="none"
+          />
+          <path
+            d="M 600 280 Q 680 235 770 295"
+            stroke={ink}
+            strokeWidth={SW}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </>
+      );
+    case 'high':
+      return (
+        <>
+          <path
+            d="M 230 225 Q 320 175 400 225"
+            stroke={ink}
+            strokeWidth={SW}
+            strokeLinecap="round"
+            fill="none"
+          >
+            <animate
+              attributeName="d"
+              values="M 230 225 Q 320 175 400 225;M 230 205 Q 320 150 400 205;M 230 225 Q 320 175 400 225"
+              dur="1.4s"
+              repeatCount="indefinite"
+            />
+          </path>
+          <path
+            d="M 600 225 Q 680 175 770 225"
+            stroke={ink}
+            strokeWidth={SW}
+            strokeLinecap="round"
+            fill="none"
+          >
+            <animate
+              attributeName="d"
+              values="M 600 225 Q 680 175 770 225;M 600 205 Q 680 150 770 205;M 600 225 Q 680 175 770 225"
+              dur="1.4s"
+              repeatCount="indefinite"
+            />
+          </path>
+        </>
+      );
+    case 'angry':
+      // Chunky angled wedges — the signature toon-snarl brow.
+      return (
+        <>
+          <path d="M 220 230 L 410 300" stroke={ink} strokeWidth={SW + 6} strokeLinecap="round">
+            <animate
+              attributeName="d"
+              values="M 220 230 L 410 300;M 220 240 L 410 290;M 220 230 L 410 300"
+              dur="0.45s"
+              repeatCount="indefinite"
+            />
+          </path>
+          <path d="M 590 300 L 780 230" stroke={ink} strokeWidth={SW + 6} strokeLinecap="round">
+            <animate
+              attributeName="d"
+              values="M 590 300 L 780 230;M 590 290 L 780 240;M 590 300 L 780 230"
+              dur="0.45s"
+              repeatCount="indefinite"
+            />
+          </path>
+        </>
+      );
+    case 'quirked':
+      return (
+        <>
+          <path
+            d="M 230 275 Q 320 260 400 270"
+            stroke={ink}
+            strokeWidth={SW}
+            strokeLinecap="round"
+            fill="none"
+          />
+          <path
+            d="M 600 245 Q 680 200 770 235"
+            stroke={ink}
+            strokeWidth={SW}
+            strokeLinecap="round"
+            fill="none"
+          >
+            <animate
+              attributeName="d"
+              values="M 600 245 Q 680 200 770 235;M 600 225 Q 680 175 770 215;M 600 245 Q 680 200 770 235"
+              dur="2s"
+              repeatCount="indefinite"
+            />
+          </path>
+        </>
+      );
+    case 'asymm':
+      return (
+        <>
+          <path
+            d="M 230 240 Q 320 210 400 250"
+            stroke={ink}
+            strokeWidth={SW}
+            strokeLinecap="round"
+            fill="none"
+          >
+            <animate
+              attributeName="d"
+              values="M 230 240 Q 320 210 400 250;M 230 260 Q 320 240 400 270;M 230 240 Q 320 210 400 250"
+              dur="1.8s"
+              repeatCount="indefinite"
+            />
+          </path>
+          <path
+            d="M 600 285 Q 680 280 770 280"
+            stroke={ink}
+            strokeWidth={SW}
+            strokeLinecap="round"
+            fill="none"
+          >
+            <animate
+              attributeName="d"
+              values="M 600 285 Q 680 280 770 280;M 600 265 Q 680 240 770 255;M 600 285 Q 680 280 770 280"
+              dur="1.8s"
+              repeatCount="indefinite"
+            />
+          </path>
+        </>
+      );
+    case 'none':
+    default:
+      return null;
+  }
+}
+
+// Cheeks: cosmetic decoration drawn over the personality-color background but
+// under the facial features. Family-dispatched so we can add freckles,
+// stripes, whiskers, etc. as new families later without changing callers.
+export function Cheeks({ family }: { family: CheekFamily }) {
+  if (family === 'blush') {
+    return (
+      <>
+        <ellipse cx={180} cy={620} rx={70} ry={42} fill="#ff9aa2" opacity={0.55} />
+        <ellipse cx={820} cy={620} rx={70} ry={42} fill="#ff9aa2" opacity={0.55} />
+      </>
+    );
+  }
+  return null;
 }
 
 export function Accessories({ mood }: { mood: MoodKey }) {

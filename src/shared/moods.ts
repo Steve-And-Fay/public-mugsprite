@@ -93,9 +93,13 @@ import { z } from 'zod';
 
 export const EYE_FAMILIES = ['round', 'pixel', 'toon'] as const;
 export const MOUTH_FAMILIES = ['curve', 'pixel', 'toon'] as const;
+export const BROW_FAMILIES = ['default', 'bold'] as const;
+export const CHEEK_FAMILIES = ['none', 'blush'] as const;
 
 export type EyeFamily = (typeof EYE_FAMILIES)[number];
 export type MouthFamily = (typeof MOUTH_FAMILIES)[number];
+export type BrowFamily = (typeof BROW_FAMILIES)[number];
+export type CheekFamily = (typeof CHEEK_FAMILIES)[number];
 
 export const EYE_FAMILY_LABELS: Record<EyeFamily, string> = {
   round: 'Round',
@@ -107,28 +111,43 @@ export const MOUTH_FAMILY_LABELS: Record<MouthFamily, string> = {
   pixel: 'Pixel',
   toon: 'Toon',
 };
+export const BROW_FAMILY_LABELS: Record<BrowFamily, string> = {
+  default: 'Classic',
+  bold: 'Bold',
+};
+export const CHEEK_FAMILY_LABELS: Record<CheekFamily, string> = {
+  none: 'None',
+  blush: 'Blush',
+};
 
 export const DEFAULT_EYES_FAMILY: EyeFamily = 'round';
 export const DEFAULT_MOUTH_FAMILY: MouthFamily = 'curve';
+export const DEFAULT_BROWS_FAMILY: BrowFamily = 'default';
+export const DEFAULT_CHEEKS_FAMILY: CheekFamily = 'none';
 
 // Persistent visual identity an owner can set on an agent. v = schema version.
-// v=2 is the family-based schema; v=1 (legacy single-style) is no longer
-// accepted server-side — old rows still validate to null and fall back to
-// the built-in default.
+// v=2 is the family-based schema. Brows and cheeks were added later as
+// optional fields; agents stored before those existed still validate and the
+// renderer fills them with safe defaults.
 export interface AgentTraits {
   v: 2;
   eyesFamily: EyeFamily;
   mouthFamily: MouthFamily;
+  browsFamily?: BrowFamily;
+  cheeksFamily?: CheekFamily;
 }
 
 export const AgentTraitsSchema = z.object({
   v: z.literal(2),
   eyesFamily: z.enum(EYE_FAMILIES),
   mouthFamily: z.enum(MOUTH_FAMILIES),
+  browsFamily: z.enum(BROW_FAMILIES).optional(),
+  cheeksFamily: z.enum(CHEEK_FAMILIES).optional(),
 });
 
-// Pure composition helper. Picks family from traits (falling back to defaults)
-// and expression from the mood. Brows remain mood-driven.
+// Pure composition helper. Picks every family from traits (falling back to
+// defaults) and expression from the mood. Brows still have a per-mood
+// expression on top of the chosen family.
 export function resolveFaceParts(
   mood: MoodKey,
   traits: AgentTraits | null | undefined,
@@ -137,7 +156,9 @@ export function resolveFaceParts(
   eyesExpression: EyeStyle;
   mouthFamily: MouthFamily;
   mouthExpression: MouthStyle;
-  brows: BrowStyle;
+  browsFamily: BrowFamily;
+  browsExpression: BrowStyle;
+  cheeksFamily: CheekFamily;
 } {
   const moodDef = MOODS[mood];
   return {
@@ -145,6 +166,8 @@ export function resolveFaceParts(
     eyesExpression: moodDef.eyes,
     mouthFamily: traits?.mouthFamily ?? DEFAULT_MOUTH_FAMILY,
     mouthExpression: moodDef.mouth,
-    brows: moodDef.brows,
+    browsFamily: traits?.browsFamily ?? DEFAULT_BROWS_FAMILY,
+    browsExpression: moodDef.brows,
+    cheeksFamily: traits?.cheeksFamily ?? DEFAULT_CHEEKS_FAMILY,
   };
 }

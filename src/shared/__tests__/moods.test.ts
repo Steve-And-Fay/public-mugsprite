@@ -22,7 +22,7 @@ describe('resolveFaceParts — null traits fall back to built-in families', () =
       expect(result.mouthFamily).toBe(DEFAULT_MOUTH_FAMILY);
       expect(result.eyesExpression).toBe(MOODS[mood].eyes);
       expect(result.mouthExpression).toBe(MOODS[mood].mouth);
-      expect(result.brows).toBe(MOODS[mood].brows);
+      expect(result.browsExpression).toBe(MOODS[mood].brows);
     });
   }
 });
