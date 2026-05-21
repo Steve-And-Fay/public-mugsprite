@@ -12,6 +12,10 @@ interface OwnerPanelProps {
   origin: string;
   expiresAt: string | null;
   onRenewed: (expiresAt: string) => void;
+  // Secondary entry point for the mug builder. The primary entry point is the
+  // per-tile button on the grid; this list-row link is a convenience for owners
+  // managing many agents at once.
+  onCustomize?: (agentId: string) => void;
 }
 
 function formatExpiry(iso: string): string {
@@ -327,6 +331,7 @@ export function OwnerPanel({
   origin,
   expiresAt,
   onRenewed,
+  onCustomize,
 }: OwnerPanelProps) {
   const [name, setName] = useState(() => generateAgentName());
   const [color, setColor] = useState(DEFAULT_COLORS[0]!);
@@ -507,6 +512,16 @@ export function OwnerPanel({
                   {a.name}
                 </span>
                 <span className="text-[10px] opacity-60 hidden sm:inline">{a.mood}</span>
+                {onCustomize && (
+                  <button
+                    onClick={() => onCustomize(a.id)}
+                    className="font-display text-[10px] tracking-wider border-2 border-ink rounded px-1.5 py-0.5 bg-accent-yellow shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition"
+                    aria-label={`Customize ${a.name}`}
+                    title="Customize this mug"
+                  >
+                    ✎
+                  </button>
+                )}
                 <button
                   onClick={() => handleDelete(a.id)}
                   className="font-display text-xs hover:text-red-700"

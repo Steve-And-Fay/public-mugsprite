@@ -364,6 +364,16 @@ export default function RoomPage() {
                 onRenewed={(expiresAt) => {
                   setRoom((r) => (r ? { ...r, expiresAt } : r));
                 }}
+                onCustomize={(agentId) => {
+                  setSearchParams(
+                    (prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set('builder', agentId);
+                      return next;
+                    },
+                    { replace: true },
+                  );
+                }}
               />
               <MyDataDisclosure roomId={roomId} ownerToken={ownerToken} />
             </aside>
