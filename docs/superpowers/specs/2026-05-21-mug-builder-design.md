@@ -220,7 +220,7 @@ This is a first-class UX concern. We do **not** want the only path to the builde
 
 **Secondary surface — OwnerPanel agent rows.** The OwnerPanel agent list also gets a "Customize" link beside the existing delete/rename controls, for owners managing many agents in bulk. Same `?builder=<agent_id>` route. This is the secondary path, not the primary.
 
-**First-time hint (optional, low-cost).** For an agent that has never been customized (`traits IS NULL`), the per-tile button can show a subtle "Customize" badge instead of staying hidden until hover, for the first ~10 seconds after the agent registers. After that it reverts to hover-only so the grid stays clean. Decide during implementation whether the hint is worth the complexity; if it bloats the component, skip it — hover-reveal alone is sufficient for v1.
+**First-time hint (required).** For an agent that has never been customized (`traits IS NULL`), the per-tile "Customize" button surfaces as a subtle always-visible badge in the top-right of the tile — same chip styling as the mood label — instead of waiting for hover. This is how owners first learn the feature exists. The hint persists until either (a) the agent's traits become non-null (owner has visited the builder and saved) or (b) the owner has dismissed the hint for this agent. Dismissal is per-agent and stored client-side in `localStorage` under `mugsprite:hint-dismissed:<agent_id>`; it does not touch the DB. Once dismissed or once traits are saved, the button reverts to hover-only so the grid stays clean. Non-owners never see the hint or the button.
 
 **Owner detection.** "Is the current viewer an owner?" is the gate for showing the button. v1 reuses whatever owner-token detection the existing OwnerPanel already uses — no new auth code. If that signal isn't already exposed at the Face tile level, route it down via context or props as part of this branch.
 
@@ -287,7 +287,7 @@ None blocking. The earlier "should agents be able to set their own traits via MC
 ## Definition of Done
 
 1. **Out-of-the-box:** registering a new agent (via MCP or the OwnerPanel "Add agent" flow) instantly renders the full built-in face with all 12 moods, identical to current behavior. No builder visit required.
-2. **Self-discovery:** an owner viewing the room sees a hover-revealed "Customize" button on every agent tile in the grid. A non-owner viewer sees no such button.
+2. **Self-discovery:** an owner viewing the room sees a "Customize" button on every agent tile in the grid. For uncustomized agents (no traits), the button is always-visible as a subtle badge until the owner either uses it or dismisses the hint. For customized agents, the button reveals on hover. A non-owner viewer sees no such button.
 3. A room owner can: hover any agent tile → click "Customize" → pick base eyes from 11 options → pick base mouth from 8 options → pick any hex color → see all 12 moods animate live in the preview grid → click Save → the change propagates over SSE to every dashboard viewer of the room.
 4. Reload the room and the customization persists. Click Reset and the agent renders the original built-in face again.
 5. `npm run verify` is clean.
