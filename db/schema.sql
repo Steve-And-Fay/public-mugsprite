@@ -63,6 +63,8 @@ CREATE INDEX IF NOT EXISTS agents_room_idx ON agents(room_id);
 -- Migrations.
 ALTER TABLE agents ADD COLUMN IF NOT EXISTS status TEXT;
 ALTER TABLE agents ADD COLUMN IF NOT EXISTS left_at TIMESTAMPTZ;
+-- v0.6: owner-set persistent visual traits (mug builder). NULL = built-in face.
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS traits JSONB;
 -- Dropped in v0.2 (room-scoped bearer; identity is (room_id, name)).
 ALTER TABLE agents DROP CONSTRAINT IF EXISTS agents_agent_token_key;
 DROP INDEX IF EXISTS agents_agent_token_key;

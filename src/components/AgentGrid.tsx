@@ -97,6 +97,7 @@ export function AgentGrid({
             onDismiss={() => dismiss(agent.id, agent.updatedAt)}
             muted={muted}
             volume={volume}
+            traits={agent.traits}
           />
         </div>
       </div>
@@ -118,6 +119,7 @@ export function AgentGrid({
           onDismiss={() => dismiss(agent.id, agent.updatedAt)}
           muted={muted}
           volume={volume}
+          traits={agent.traits}
         />
       ))}
     </div>

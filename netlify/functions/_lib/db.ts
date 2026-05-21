@@ -1,5 +1,6 @@
 import { neon } from '@netlify/neon';
 import type { Agent, Mood, Room, RoomEvent } from '../../../src/shared/types';
+import { AgentTraitsSchema, type AgentTraits } from '../../../src/shared/moods';
 
 const sql = neon();
 
@@ -25,6 +26,9 @@ interface AgentRow {
   last_message: string | null;
   created_at: string;
   updated_at: string;
+  // Nullable JSONB. Lenient read: any shape that fails schema validation
+  // is treated as null (renderer falls back to the built-in face).
+  traits: unknown;
 }
 
 interface EventRow {
@@ -60,7 +64,14 @@ function mapAgent(row: AgentRow): Agent {
     lastMessage: row.last_message,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    traits: parseTraits(row.traits),
   };
+}
+
+function parseTraits(raw: unknown): AgentTraits | null {
+  if (raw === null || raw === undefined) return null;
+  const result = AgentTraitsSchema.safeParse(raw);
+  return result.success ? result.data : null;
 }
 
 function mapEvent(row: EventRow): RoomEvent {
@@ -243,6 +254,21 @@ export async function updateAgentName(id: string, name: string): Promise<void> {
   await sql`
     UPDATE agents SET name = ${name}, updated_at = NOW() WHERE id = ${id}
   `;
+}
+
+// `null` clears the customization; the renderer falls back to the built-in face.
+export async function updateAgentTraits(
+  id: string,
+  traits: AgentTraits | null,
+): Promise<Agent | null> {
+  const value = traits === null ? null : JSON.stringify(traits);
+  const rows = (await sql`
+    UPDATE agents
+    SET traits = ${value}::jsonb, updated_at = NOW()
+    WHERE id = ${id}
+    RETURNING *
+  `) as AgentRow[];
+  return rows[0] ? mapAgent(rows[0]) : null;
 }
 
 export async function deleteAgent(id: string): Promise<void> {

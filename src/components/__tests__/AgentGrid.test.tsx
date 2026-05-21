@@ -19,6 +19,7 @@ function makeAgent(overrides: Partial<Agent>): Agent {
     lastMessage: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    traits: null,
     ...overrides,
   };
 }

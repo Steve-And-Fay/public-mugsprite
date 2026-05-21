@@ -27,6 +27,7 @@ function sampleAgent(overrides: Partial<Agent> = {}): Agent {
     lastMessage: null,
     createdAt: '2026-05-21T00:00:00Z',
     updatedAt: '2026-05-21T00:00:00Z',
+    traits: null,
     ...overrides,
   };
 }

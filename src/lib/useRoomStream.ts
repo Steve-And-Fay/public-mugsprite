@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef } from 'react';
 import type { Agent, Mood } from '@shared/types';
+import type { AgentTraits } from '@shared/moods';
 
 interface State {
   agents: Record<string, Agent & { speakingText?: string | null; speakingNonce?: number }>;
@@ -16,6 +17,7 @@ type Action =
   | { type: 'speak'; eventId: number; agentId: string; text: string }
   | { type: 'color'; eventId: number; agentId: string; color: string }
   | { type: 'leave'; eventId: number; agentId: string }
+  | { type: 'traits'; eventId: number; agentId: string; traits: AgentTraits | null }
   | { type: 'speech-end'; agentId: string };
 
 const initial: State = { agents: {}, status: 'connecting', lastEventId: 0 };
@@ -85,6 +87,18 @@ function reducer(state: State, action: Action): State {
         },
       };
     }
+    case 'traits': {
+      const existing = state.agents[action.agentId];
+      if (!existing) return state;
+      return {
+        ...state,
+        lastEventId: action.eventId,
+        agents: {
+          ...state.agents,
+          [action.agentId]: { ...existing, traits: action.traits },
+        },
+      };
+    }
     case 'leave': {
       if (!state.agents[action.agentId]) return state;
       const { [action.agentId]: _drop, ...rest } = state.agents;
@@ -134,6 +148,7 @@ export function useRoomStream(roomId: string | undefined) {
           mood: Mood;
           status?: string | null;
           reconnect?: boolean;
+          traits?: AgentTraits | null;
         };
       };
       const now = new Date().toISOString();
@@ -148,6 +163,7 @@ export function useRoomStream(roomId: string | undefined) {
         lastMessage: null,
         createdAt: now,
         updatedAt: now,
+        traits: msg.payload.traits ?? null,
       };
       dispatch({ type: 'register', eventId: msg.id, agent });
     });
@@ -187,6 +203,20 @@ export function useRoomStream(roomId: string | undefined) {
         eventId: msg.id,
         agentId: msg.agentId,
         color: msg.payload.color,
+      });
+    });
+
+    es.addEventListener('traits', (e) => {
+      const msg = JSON.parse((e as MessageEvent).data) as {
+        id: number;
+        agentId: string;
+        payload: { traits: AgentTraits | null };
+      };
+      dispatch({
+        type: 'traits',
+        eventId: msg.id,
+        agentId: msg.agentId,
+        traits: msg.payload.traits,
       });
     });
 

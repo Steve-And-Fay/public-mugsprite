@@ -1,5 +1,12 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { MOODS, TALK_MOUTHS, type MoodKey, type MouthStyle } from '@shared/moods';
+import {
+  MOODS,
+  TALK_MOUTHS,
+  resolveFaceParts,
+  type AgentTraits,
+  type MoodKey,
+  type MouthStyle,
+} from '@shared/moods';
 import { Accessories, Brows, Eye, Teeth } from './FaceParts';
 import { FaceInkContext, type FaceInk } from './faceInk';
 import { mouthPaths, tonguePath } from './mouthPaths';
@@ -41,6 +48,8 @@ interface FaceProps {
   rate?: number;
   muted?: boolean;
   volume?: number;
+  // Owner-set persistent visual traits. null/undefined → built-in face.
+  traits?: AgentTraits | null;
 }
 
 // Staleness shrink: 2% per minute, but never below half-size. Faces hold at
@@ -104,6 +113,7 @@ function FaceImpl({
   rate = 1.05,
   muted = false,
   volume = 1,
+  traits = null,
 }: FaceProps) {
   // Pause the staleness ticker while actively speaking — the badge can't
   // render in that state anyway, and we don't need a re-render every second.
@@ -182,7 +192,8 @@ function FaceImpl({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speakingText, muted, volume]);
 
-  const effectiveMouth: MouthStyle = isTalking && talkMouth ? talkMouth : moodDef.mouth;
+  const resolved = useMemo(() => resolveFaceParts(mood, traits), [mood, traits]);
+  const effectiveMouth: MouthStyle = isTalking && talkMouth ? talkMouth : resolved.mouth;
   const faceInk = useMemo(() => inkForBackground(color), [color]);
 
   const timings = useMemo(
@@ -279,7 +290,7 @@ function FaceImpl({
               <svg
                 className="face-svg"
                 viewBox="0 0 1000 1000"
-                data-eyes={moodDef.eyes}
+                data-eyes={resolved.eyes}
                 xmlns="http://www.w3.org/2000/svg"
                 preserveAspectRatio="xMidYMid meet"
                 role="img"
@@ -289,7 +300,7 @@ function FaceImpl({
                   <Accessories mood={mood} />
                 </g>
                 <g className="brows">
-                  <Brows style={moodDef.brows} />
+                  <Brows style={resolved.brows} />
                 </g>
                 <g
                   className="leftEye"
@@ -298,7 +309,7 @@ function FaceImpl({
                     animationDelay: `${timings.eyeDelay}s`,
                   }}
                 >
-                  <Eye style={moodDef.eyes} cx={320} cy={380} isLeft={true} />
+                  <Eye style={resolved.eyes} cx={320} cy={380} isLeft={true} />
                 </g>
                 <g
                   className="rightEye"
@@ -307,7 +318,7 @@ function FaceImpl({
                     animationDelay: `${timings.eyeDelay}s`,
                   }}
                 >
-                  <Eye style={moodDef.eyes} cx={680} cy={380} isLeft={false} />
+                  <Eye style={resolved.eyes} cx={680} cy={380} isLeft={false} />
                 </g>
                 <g
                   className="mouthGroup"

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MOOD_KEYS } from './moods';
+import type { AgentTraits } from './moods';
 
 export const MoodSchema = z.enum(MOOD_KEYS);
 export type Mood = z.infer<typeof MoodSchema>;
@@ -43,9 +44,19 @@ export interface Agent {
   lastMessage: string | null;
   createdAt: string;
   updatedAt: string;
+  // Owner-set persistent visual traits. null = render the built-in face.
+  traits: AgentTraits | null;
 }
 
-export type EventKind = 'register' | 'mood' | 'speak' | 'leave' | 'color' | 'snapshot' | 'renew';
+export type EventKind =
+  | 'register'
+  | 'mood'
+  | 'speak'
+  | 'leave'
+  | 'color'
+  | 'snapshot'
+  | 'renew'
+  | 'traits';
 
 export interface RoomEvent {
   id: number;
