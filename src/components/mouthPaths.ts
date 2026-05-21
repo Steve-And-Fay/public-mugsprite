@@ -117,9 +117,28 @@ export function mouthPathFor(family: MouthFamily, expression: MouthStyle): strin
   return table[expression];
 }
 
-// Tongue path. Only the "tongueOut" expression has a tongue; both families
-// share the same tongue position so it lines up under the mouth opening.
-export function tonguePath(expression: MouthStyle): string {
+// Tongue path. Curve/Pixel families only render a tongue for "tongueOut".
+// The Toon family shows a soft pink lower lip / tongue across every wide-open
+// expression so the monster-mouth interior reads correctly.
+export function tonguePath(family: MouthFamily, expression: MouthStyle): string {
+  if (family === 'toon') {
+    switch (expression) {
+      case 'tongueOut':
+        return 'M 440 770 Q 430 880 510 890 Q 590 880 560 770 Z';
+      case 'bigSmile':
+        return 'M 290 850 Q 500 950 710 850 Q 500 920 290 850 Z';
+      case 'talk_a':
+        return 'M 320 830 Q 500 920 680 830 Q 500 900 320 830 Z';
+      case 'frown':
+        return 'M 360 800 Q 500 760 640 800 Q 500 830 360 800 Z';
+      case 'openO':
+        return 'M 440 800 Q 500 850 560 800 Q 500 830 440 800 Z';
+      case 'singO':
+        return 'M 460 820 Q 500 860 540 820 Q 500 850 460 820 Z';
+      default:
+        return '';
+    }
+  }
   return expression === 'tongueOut'
     ? 'M 470 770 Q 460 870 510 880 Q 560 870 540 770 Z'
     : '';

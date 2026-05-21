@@ -416,14 +416,14 @@ function FaceImpl({
                     d={mouthPathFor(resolved.mouthFamily, effectiveMouth)}
                   />
                   <g className="teeth">
-                    <Teeth mouth={effectiveMouth} />
+                    <Teeth mouth={effectiveMouth} family={resolved.mouthFamily} />
                   </g>
                   <path
                     className="tongue"
                     fill="#ff4d6d"
                     stroke={faceInk.ink}
                     strokeWidth={5}
-                    d={tonguePath(effectiveMouth)}
+                    d={tonguePath(resolved.mouthFamily, effectiveMouth)}
                   />
                 </g>
               </svg>
