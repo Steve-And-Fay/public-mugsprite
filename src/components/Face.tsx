@@ -293,15 +293,25 @@ function FaceImpl({
           backgroundImage:
             'linear-gradient(to bottom, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.28) 100%)',
           clipPath: bodyClipPathFor(resolved.bodyShape) || undefined,
-          // Box-shadow gets clipped by clip-path; switch to a drop-shadow
-          // filter for non-square shapes so the chunky brutal shadow follows
-          // the actual silhouette (heart point, blob curves, circle edge).
-          // The 0-blur 1px shadows around the silhouette mimic the 3px ink
-          // border that the square keeps via CSS.
+          // Box-shadow and border both get clipped by clip-path; for
+          // non-square shapes use stacked drop-shadow filters to recreate
+          // BOTH the 3px ink outline AND the 6px offset brutal shadow that
+          // gives the square its signature chunky neo-brutalist depth.
+          //
+          // Four directional 3px drop-shadows compound into what reads as
+          // a 3px ink outline following the actual silhouette (heart point,
+          // blob curves, circle edge). The final 6px shadow is the brutal
+          // offset shadow applied to the now-outlined shape.
           filter:
             resolved.bodyShape === 'square'
               ? undefined
-              : 'drop-shadow(6px 6px 0 #1a1a1a) drop-shadow(0 -1px 0 #1a1a1a) drop-shadow(0 1px 0 #1a1a1a) drop-shadow(-1px 0 0 #1a1a1a) drop-shadow(1px 0 0 #1a1a1a)',
+              : [
+                  'drop-shadow(0 -3px 0 #1a1a1a)',
+                  'drop-shadow(0 3px 0 #1a1a1a)',
+                  'drop-shadow(-3px 0 0 #1a1a1a)',
+                  'drop-shadow(3px 0 0 #1a1a1a)',
+                  'drop-shadow(6px 6px 0 #1a1a1a)',
+                ].join(' '),
         }}
       >
 
