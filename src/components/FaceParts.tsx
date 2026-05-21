@@ -1167,16 +1167,19 @@ function BoldBrows({ style }: { style: BrowStyle }) {
 // stripes, whiskers, etc. as new families later without changing callers.
 // Body shape clip-path values. Applied via CSS to the colored container div.
 // Returning an empty string means "no clip" — keeps the default rounded-square.
+//
+// `heart` and `blob` reference SVG clipPath definitions in MugClipPaths
+// (rendered once at the app root) so they can use real Bézier curves.
+// Polygon clip-paths can only do straight lines and look jagged.
 // eslint-disable-next-line react-refresh/only-export-components
 export function bodyClipPathFor(shape: BodyShape): string {
   switch (shape) {
     case 'circle':
       return 'circle(50% at 50% 50%)';
     case 'heart':
-      return 'polygon(50% 92%, 6% 50%, 6% 20%, 28% 4%, 50% 22%, 72% 4%, 94% 20%, 94% 50%)';
+      return 'url(#mug-heart)';
     case 'blob':
-      // Asymmetric organic blob — irregular but smooth-looking polygon.
-      return 'polygon(50% 0%, 78% 6%, 96% 30%, 100% 60%, 86% 86%, 60% 100%, 28% 96%, 6% 76%, 0% 46%, 14% 16%)';
+      return 'url(#mug-blob)';
     case 'square':
     default:
       return '';
