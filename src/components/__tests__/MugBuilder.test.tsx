@@ -41,11 +41,12 @@ afterEach(() => {
   document.body.style.overflow = '';
 });
 
-// The builder is the killer-feature surface — these tests cover the contract
-// every owner depends on: save sends valid traits, cancel sends nothing, and
-// the picker actually changes the choice that gets persisted.
+// The builder presents family pickers (not per-expression). These tests pin
+// down the contract: pickers show all known families, the right family
+// reaches the server on Save, Cancel sends nothing, and Reset only fires
+// when the agent has traits to clear.
 describe('MugBuilder', () => {
-  it('renders all 11 eye styles and 8 base mouths as pickable tiles', () => {
+  it('renders an eye-family tile and a mouth-family tile for every known family', () => {
     render(
       <MugBuilder
         agent={sampleAgent()}
@@ -54,25 +55,22 @@ describe('MugBuilder', () => {
         onDismiss={() => {}}
       />,
     );
-    // Eye labels (subset proves enumeration; full count assertion below)
-    expect(screen.getByText('Normal')).toBeInTheDocument();
-    expect(screen.getByText('Sparkle')).toBeInTheDocument();
-    expect(screen.getByText('X')).toBeInTheDocument();
-    // Mouth labels
-    expect(screen.getByText('Gentle')).toBeInTheDocument();
-    expect(screen.getByText('Smirk')).toBeInTheDocument();
-    expect(screen.getByText('Wavy')).toBeInTheDocument();
-    // The 12-mood preview labels are uppercased. (IDLE is also rendered inside
-    // every picker tile's mini Face badge, so we expect many matches — the
-    // assertion is just that the labels are present at all.)
+    // Family labels appear in the tile chip (uppercased). Each family name
+    // appears at least once (some appear in both eye + mouth sections — that's
+    // expected and intentional, the labels are shared).
+    expect(screen.getAllByText('ROUND').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('PIXEL').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('CURVE').length).toBeGreaterThan(0);
+    // The 12-mood preview labels carry through.
     expect(screen.getAllByText('IDLE').length).toBeGreaterThan(0);
     expect(screen.getAllByText('SLEEPY').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('ERROR').length).toBeGreaterThan(0);
   });
 
-  it('persists the picker selection through Save with valid traits', async () => {
+  it('sends the picked families to the server on Save', async () => {
     const user = userEvent.setup();
-    updateMock.mockResolvedValue({ agent: sampleAgent({ traits: { v: 1, baseEyes: 'sparkle', baseMouth: 'wavy' } }) });
+    updateMock.mockResolvedValue({
+      agent: sampleAgent({ traits: { v: 2, eyesFamily: 'pixel', mouthFamily: 'pixel' } }),
+    });
     const onSaved = vi.fn();
     const onDismiss = vi.fn();
 
@@ -85,17 +83,20 @@ describe('MugBuilder', () => {
       />,
     );
 
-    // Pick a non-default eye + mouth via their labels (multiple matches exist
-    // for the eye label — one per picker tile in the EYES section. The first
-    // is the eye picker tile.)
-    await user.click(screen.getAllByText('Sparkle')[0]!);
-    await user.click(screen.getAllByText('Wavy')[0]!);
+    // Pick the Pixel family for both eyes and mouth — Pixel appears in both
+    // sections, getAllByText returns them in DOM order (eye tile first).
+    const pixelTiles = screen.getAllByText('PIXEL');
+    await user.click(pixelTiles[0]!); // eye family pixel
+    await user.click(pixelTiles[1]!); // mouth family pixel
     await user.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() => {
       expect(updateMock).toHaveBeenCalledWith(
         'agent-1',
-        { traits: { v: 1, baseEyes: 'sparkle', baseMouth: 'wavy' }, color: '#5599DD' },
+        {
+          traits: { v: 2, eyesFamily: 'pixel', mouthFamily: 'pixel' },
+          color: '#5599DD',
+        },
         'owner-token',
       );
     });
@@ -116,10 +117,11 @@ describe('MugBuilder', () => {
     );
     await user.click(screen.getByRole('button', { name: /cancel/i }));
     expect(updateMock).not.toHaveBeenCalled();
+    expect(resetMock).not.toHaveBeenCalled();
     expect(onDismiss).toHaveBeenCalled();
   });
 
-  it('Reset disabled when agent has no custom traits to clear', () => {
+  it('Reset disabled when the agent has no custom traits to clear', () => {
     render(
       <MugBuilder
         agent={sampleAgent()}
@@ -128,8 +130,7 @@ describe('MugBuilder', () => {
         onDismiss={() => {}}
       />,
     );
-    const reset = screen.getByRole('button', { name: /reset to built-in/i });
-    expect(reset).toBeDisabled();
+    expect(screen.getByRole('button', { name: /reset to built-in/i })).toBeDisabled();
   });
 
   it('Reset sends null traits when the agent has been customized', async () => {
@@ -140,7 +141,7 @@ describe('MugBuilder', () => {
 
     render(
       <MugBuilder
-        agent={sampleAgent({ traits: { v: 1, baseEyes: 'happy', baseMouth: 'bigSmile' } })}
+        agent={sampleAgent({ traits: { v: 2, eyesFamily: 'pixel', mouthFamily: 'pixel' } })}
         ownerToken="owner"
         onSaved={() => {}}
         onDismiss={onDismiss}

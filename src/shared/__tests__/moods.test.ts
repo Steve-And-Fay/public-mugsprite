@@ -1,116 +1,100 @@
 import { describe, expect, it } from 'vitest';
 import {
   AgentTraitsSchema,
-  BASE_MOUTHS,
-  EYE_STYLES,
+  DEFAULT_EYES_FAMILY,
+  DEFAULT_MOUTH_FAMILY,
+  EYE_FAMILIES,
   MOODS,
   MOOD_KEYS,
-  MOOD_DELTAS,
+  MOUTH_FAMILIES,
   resolveFaceParts,
 } from '../moods';
 
-// The mug-builder refactor must be visually inert when no traits are set.
-// resolveFaceParts(mood, null) must yield the exact triple every mood has
-// shipped with up to this point, for every mood.
-describe('resolveFaceParts — parity with original MOODS table', () => {
+// The family model: every mood selects its EXPRESSION from the MOODS table,
+// and traits select the FAMILY (eye style + mouth style as cohesive sets).
+// resolveFaceParts is pure and the only composition path the renderer uses.
+
+describe('resolveFaceParts — null traits fall back to built-in families', () => {
   for (const mood of MOOD_KEYS) {
-    it(`mood "${mood}" with traits=null matches MOODS[${mood}]`, () => {
-      const expected = MOODS[mood];
-      const actual = resolveFaceParts(mood, null);
-      expect(actual).toEqual({
-        eyes: expected.eyes,
-        mouth: expected.mouth,
-        brows: expected.brows,
-      });
+    it(`mood "${mood}" with traits=null uses the default families`, () => {
+      const result = resolveFaceParts(mood, null);
+      expect(result.eyesFamily).toBe(DEFAULT_EYES_FAMILY);
+      expect(result.mouthFamily).toBe(DEFAULT_MOUTH_FAMILY);
+      expect(result.eyesExpression).toBe(MOODS[mood].eyes);
+      expect(result.mouthExpression).toBe(MOODS[mood].mouth);
+      expect(result.brows).toBe(MOODS[mood].brows);
     });
   }
-
-  it('mood deltas are exhaustive — every key in MOODS has a delta entry', () => {
-    for (const mood of MOOD_KEYS) {
-      expect(MOOD_DELTAS).toHaveProperty(mood);
-    }
-  });
 });
 
-describe('resolveFaceParts — owner traits override the idle defaults only', () => {
-  it('idle uses the owner base for both eyes and mouth', () => {
-    const result = resolveFaceParts('idle', {
-      v: 1,
-      baseEyes: 'sparkle',
-      baseMouth: 'wavy',
-    });
-    expect(result.eyes).toBe('sparkle');
-    expect(result.mouth).toBe('wavy');
+describe('resolveFaceParts — family selection carries through every mood', () => {
+  it('picking a non-default eye family overrides every mood', () => {
+    for (const mood of MOOD_KEYS) {
+      const result = resolveFaceParts(mood, {
+        v: 2,
+        eyesFamily: 'pixel',
+        mouthFamily: DEFAULT_MOUTH_FAMILY,
+      });
+      expect(result.eyesFamily).toBe('pixel');
+      // The mood still drives WHICH expression within that family.
+      expect(result.eyesExpression).toBe(MOODS[mood].eyes);
+    }
   });
 
-  it('expressive moods still impose their delta over owner traits', () => {
-    // sleepy and sad override BOTH features — closed/tinyO and sad/frown are
-    // load-bearing emotional signals. The owner's base never wins here.
-    const traits = { v: 1, baseEyes: 'wide', baseMouth: 'smirk' } as const;
-    expect(resolveFaceParts('sleepy', traits)).toEqual({
-      eyes: 'closed',
-      mouth: 'tinyO',
-      brows: 'none',
-    });
-    expect(resolveFaceParts('sad', traits)).toEqual({
-      eyes: 'sad',
-      mouth: 'frown',
-      brows: 'sad',
-    });
+  it('picking a non-default mouth family overrides every mood', () => {
+    for (const mood of MOOD_KEYS) {
+      const result = resolveFaceParts(mood, {
+        v: 2,
+        eyesFamily: DEFAULT_EYES_FAMILY,
+        mouthFamily: 'pixel',
+      });
+      expect(result.mouthFamily).toBe('pixel');
+      expect(result.mouthExpression).toBe(MOODS[mood].mouth);
+    }
   });
 
-  it('partial-override moods leak the owner base through the un-overridden feature', () => {
-    // The whole point of partial overrides: if the owner picks sparkle eyes
-    // and a wavy mouth, they should see those traits across moods that DON'T
-    // strictly need to override that feature to read emotionally.
-    const traits = { v: 1, baseEyes: 'sparkle', baseMouth: 'wavy' } as const;
-
-    // happy/singing only override mouth — owner's sparkle eyes flow through.
-    expect(resolveFaceParts('happy', traits).eyes).toBe('sparkle');
-    expect(resolveFaceParts('singing', traits).eyes).toBe('sparkle');
-
-    // thinking/confused only override eyes — owner's wavy mouth flows through.
-    expect(resolveFaceParts('thinking', traits).mouth).toBe('wavy');
-    expect(resolveFaceParts('confused', traits).mouth).toBe('wavy');
-
-    // idle overrides nothing — both base traits flow through.
-    expect(resolveFaceParts('idle', traits)).toEqual({
-      eyes: 'sparkle',
-      mouth: 'wavy',
-      brows: 'none',
+  it('family fields are independent — eyes and mouth can come from different families', () => {
+    const result = resolveFaceParts('happy', {
+      v: 2,
+      eyesFamily: 'pixel',
+      mouthFamily: 'curve',
     });
+    expect(result.eyesFamily).toBe('pixel');
+    expect(result.mouthFamily).toBe('curve');
   });
 });
 
 describe('AgentTraitsSchema', () => {
-  it('accepts every (baseEyes, baseMouth) pair across the curated sets', () => {
-    for (const eyes of EYE_STYLES) {
-      for (const mouth of BASE_MOUTHS) {
+  it('accepts every (eyesFamily, mouthFamily) pair', () => {
+    for (const eyes of EYE_FAMILIES) {
+      for (const mouth of MOUTH_FAMILIES) {
         const parsed = AgentTraitsSchema.safeParse({
-          v: 1,
-          baseEyes: eyes,
-          baseMouth: mouth,
+          v: 2,
+          eyesFamily: eyes,
+          mouthFamily: mouth,
         });
         expect(parsed.success).toBe(true);
       }
     }
   });
 
-  it('rejects unknown mouth styles (e.g. talk_a) — only BASE_MOUTHS are valid', () => {
-    const parsed = AgentTraitsSchema.safeParse({
-      v: 1,
-      baseEyes: 'normal',
-      baseMouth: 'talk_a',
-    });
-    expect(parsed.success).toBe(false);
+  it('rejects unknown family values', () => {
+    expect(
+      AgentTraitsSchema.safeParse({
+        v: 2,
+        eyesFamily: 'not-a-family',
+        mouthFamily: 'curve',
+      }).success,
+    ).toBe(false);
   });
 
-  it('rejects future schema versions until they are migrated', () => {
-    const parsed = AgentTraitsSchema.safeParse({
-      v: 2,
-      baseEyes: 'normal',
-      baseMouth: 'gentleSmile',
-    });
-    expect(parsed.success).toBe(false);
+  it('rejects legacy v=1 payloads — they must be migrated or treated as null', () => {
+    expect(
+      AgentTraitsSchema.safeParse({
+        v: 1,
+        baseEyes: 'normal',
+        baseMouth: 'gentleSmile',
+      }).success,
+    ).toBe(false);
   });
 });

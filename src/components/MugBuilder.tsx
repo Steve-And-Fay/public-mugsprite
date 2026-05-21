@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import {
   AgentTraitsSchema,
-  BASE_MOUTHS,
-  EYE_STYLES,
+  DEFAULT_EYES_FAMILY,
+  DEFAULT_MOUTH_FAMILY,
+  EYE_FAMILIES,
+  EYE_FAMILY_LABELS,
   MOOD_KEYS,
   MOODS,
+  MOUTH_FAMILIES,
+  MOUTH_FAMILY_LABELS,
   type AgentTraits,
-  type BaseMouthStyle,
-  type EyeStyle,
+  type EyeFamily,
+  type MouthFamily,
 } from '@shared/moods';
 import type { Agent } from '@shared/types';
 import { api } from '../lib/api';
@@ -20,51 +24,20 @@ interface MugBuilderProps {
   onDismiss: () => void;
 }
 
-// Defaults match the original built-in face (idle mood traits). Choosing these
-// as the starting point means an owner who opens the builder, immediately
-// saves, and exits gets a face that looks identical to the built-in default —
-// no surprise visual change just for opening the customizer.
-const DEFAULT_TRAITS: AgentTraits = {
-  v: 1,
-  baseEyes: 'normal',
-  baseMouth: 'gentleSmile',
-};
-
-// Labels keep the picker chips readable; technical enum values stay in code.
-const EYE_LABELS: Record<EyeStyle, string> = {
-  normal: 'Normal',
-  happy: 'Happy',
-  sad: 'Sad',
-  wide: 'Wide',
-  closed: 'Closed',
-  lookUp: 'Up',
-  narrow: 'Narrow',
-  sparkle: 'Sparkle',
-  asymm: 'Asymm',
-  cross: 'Cross',
-  x: 'X',
-};
-
-const MOUTH_LABELS: Record<BaseMouthStyle, string> = {
-  gentleSmile: 'Gentle',
-  bigSmile: 'Big',
-  frown: 'Frown',
-  openO: 'Open',
-  tinyO: 'Tiny',
-  flat: 'Flat',
-  smirk: 'Smirk',
-  wavy: 'Wavy',
+const STARTING_DEFAULTS: AgentTraits = {
+  v: 2,
+  eyesFamily: DEFAULT_EYES_FAMILY,
+  mouthFamily: DEFAULT_MOUTH_FAMILY,
 };
 
 export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilderProps) {
-  const startingTraits: AgentTraits = agent.traits ?? DEFAULT_TRAITS;
-  const [eyes, setEyes] = useState<EyeStyle>(startingTraits.baseEyes);
-  const [mouth, setMouth] = useState<BaseMouthStyle>(startingTraits.baseMouth);
+  const starting = agent.traits ?? STARTING_DEFAULTS;
+  const [eyesFamily, setEyesFamily] = useState<EyeFamily>(starting.eyesFamily);
+  const [mouthFamily, setMouthFamily] = useState<MouthFamily>(starting.mouthFamily);
   const [color, setColor] = useState<string>(agent.color);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Esc closes; lock background scroll while the modal is open.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onDismiss();
@@ -78,16 +51,13 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
     };
   }, [onDismiss]);
 
-  const traits: AgentTraits = { v: 1, baseEyes: eyes, baseMouth: mouth };
+  const traits: AgentTraits = { v: 2, eyesFamily, mouthFamily };
 
   const handleSave = async () => {
     setError(null);
     setSaving(true);
     try {
       const parsed = AgentTraitsSchema.parse(traits);
-      // Send color alongside traits so the picker actually persists. The
-      // server emits separate 'color' and 'traits' events; both flow back
-      // through SSE within ~1s.
       const result = await api.updateAgent(
         agent.id,
         { traits: parsed, color },
@@ -145,22 +115,25 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
         </header>
 
         <div className="overflow-y-auto p-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6">
-          {/* LEFT PANE — pickers */}
+          {/* LEFT — family pickers */}
           <div className="space-y-5">
             <section>
               <h3 className="font-display text-[10px] tracking-widest mb-2 opacity-80">
-                EYES
+                EYE FAMILY
               </h3>
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                {EYE_STYLES.map((style) => {
-                  const active = eyes === style;
+              <p className="text-[11px] opacity-70 mb-3 leading-snug">
+                Pick a style — every mood expression inherits the family's look.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {EYE_FAMILIES.map((family) => {
+                  const active = eyesFamily === family;
                   return (
                     <button
-                      key={style}
+                      key={family}
                       type="button"
-                      onClick={() => setEyes(style)}
+                      onClick={() => setEyesFamily(family)}
                       aria-pressed={active}
-                      className={`border-[2.5px] border-ink rounded-lg p-1 bg-paper shadow-brutal-sm transition ${
+                      className={`border-[2.5px] border-ink rounded-lg p-2 bg-paper shadow-brutal-sm transition ${
                         active
                           ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper -translate-x-[1px] -translate-y-[1px]'
                           : 'hover:-translate-x-[1px] hover:-translate-y-[1px]'
@@ -171,14 +144,14 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                           mood="idle"
                           color={color}
                           name=""
-                          traits={{ v: 1, baseEyes: style, baseMouth: mouth }}
+                          traits={{ v: 2, eyesFamily: family, mouthFamily }}
                           muted
                           volume={0}
                           compact
                         />
                       </div>
-                      <div className="text-center text-[9px] mt-1 tracking-wider font-display">
-                        {EYE_LABELS[style]}
+                      <div className="text-center text-[10px] mt-1 tracking-wider font-display">
+                        {EYE_FAMILY_LABELS[family].toUpperCase()}
                       </div>
                     </button>
                   );
@@ -188,18 +161,21 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
 
             <section>
               <h3 className="font-display text-[10px] tracking-widest mb-2 opacity-80">
-                MOUTH
+                MOUTH FAMILY
               </h3>
-              <div className="grid grid-cols-4 gap-2">
-                {BASE_MOUTHS.map((style) => {
-                  const active = mouth === style;
+              <p className="text-[11px] opacity-70 mb-3 leading-snug">
+                Pick a style — every mood's mouth shape inherits the family's look.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {MOUTH_FAMILIES.map((family) => {
+                  const active = mouthFamily === family;
                   return (
                     <button
-                      key={style}
+                      key={family}
                       type="button"
-                      onClick={() => setMouth(style)}
+                      onClick={() => setMouthFamily(family)}
                       aria-pressed={active}
-                      className={`border-[2.5px] border-ink rounded-lg p-1 bg-paper shadow-brutal-sm transition ${
+                      className={`border-[2.5px] border-ink rounded-lg p-2 bg-paper shadow-brutal-sm transition ${
                         active
                           ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper -translate-x-[1px] -translate-y-[1px]'
                           : 'hover:-translate-x-[1px] hover:-translate-y-[1px]'
@@ -207,17 +183,17 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                     >
                       <div className="aspect-square w-full pointer-events-none">
                         <Face
-                          mood="idle"
+                          mood="happy"
                           color={color}
                           name=""
-                          traits={{ v: 1, baseEyes: eyes, baseMouth: style }}
+                          traits={{ v: 2, eyesFamily, mouthFamily: family }}
                           muted
                           volume={0}
                           compact
                         />
                       </div>
-                      <div className="text-center text-[9px] mt-1 tracking-wider font-display">
-                        {MOUTH_LABELS[style]}
+                      <div className="text-center text-[10px] mt-1 tracking-wider font-display">
+                        {MOUTH_FAMILY_LABELS[family].toUpperCase()}
                       </div>
                     </button>
                   );
@@ -259,7 +235,7 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
             </section>
           </div>
 
-          {/* RIGHT PANE — 12-mood preview */}
+          {/* RIGHT — 12-mood preview proves the family carries through */}
           <div>
             <h3 className="font-display text-[10px] tracking-widest mb-2 opacity-80">
               PREVIEW · ALL 12 MOODS

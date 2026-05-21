@@ -74,7 +74,7 @@ describe('Customize affordance on agent tiles', () => {
     render(
       <AgentGrid
         agents={[
-          makeAgent({ traits: { v: 1, baseEyes: 'sparkle', baseMouth: 'wavy' } }),
+          makeAgent({ traits: { v: 2, eyesFamily: 'pixel', mouthFamily: 'pixel' } }),
         ]}
         onSpeechEnd={() => {}}
         isOwner

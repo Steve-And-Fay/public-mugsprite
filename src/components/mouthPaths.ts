@@ -1,6 +1,16 @@
-import type { MouthStyle } from '@shared/moods';
+import type { MouthFamily, MouthStyle } from '@shared/moods';
 
-export const mouthPaths: Record<MouthStyle, string> = {
+// ---------------------------------------------------------------------------
+// Mouth families
+//
+// Each family implements every MouthStyle as an SVG `d` path string. The
+// renderer picks the family from the agent's traits and the expression from
+// the mood.
+// ---------------------------------------------------------------------------
+
+// The "Curve" family — the original Mugsprite mouth. Smooth Bezier curves,
+// continuous arcs. This is the built-in family.
+const curveMouthPaths: Record<MouthStyle, string> = {
   gentleSmile: 'M 350 700 Q 500 800 650 700',
   bigSmile: 'M 250 690 Q 500 600 750 690 Q 500 950 250 690 Z',
   frown: 'M 350 800 Q 500 680 650 800',
@@ -19,5 +29,67 @@ export const mouthPaths: Record<MouthStyle, string> = {
   talk_u: 'M 500 730 m -35 0 a 35 45 0 1 0 70 0 a 35 45 0 1 0 -70 0',
 };
 
-export const tonguePath = (mouth: MouthStyle): string =>
-  mouth === 'tongueOut' ? 'M 470 770 Q 460 870 510 880 Q 560 870 540 770 Z' : '';
+// The "Pixel" family — 8-bit blocky mouths built from straight horizontal and
+// vertical segments. Composed of rect-like rectangles using `L` and `Z`. Each
+// expression is intentionally constructed as a stairstep / blocky silhouette
+// to read as pixel art.
+//
+// Layout note: paths sit roughly at y=700–820 to match the curve family's
+// vertical position so the surrounding face composition stays consistent.
+const pixelMouthPaths: Record<MouthStyle, string> = {
+  // 6-cell wide, 2-cell tall horizontal smile (bottom row, slight up-bow ends).
+  gentleSmile:
+    'M 370 720 L 630 720 L 630 740 L 370 740 Z M 350 700 L 370 700 L 370 720 L 350 720 Z M 630 700 L 650 700 L 650 720 L 630 720 Z',
+  // Big rectangular grin: 8 wide, 4 tall, with a stairstep along the top so
+  // it reads as a "smile" rather than a slab.
+  bigSmile:
+    'M 280 680 L 720 680 L 720 700 L 740 700 L 740 720 L 760 720 L 760 800 L 240 800 L 240 720 L 260 720 L 260 700 L 280 700 Z',
+  // Inverted gentle smile.
+  frown:
+    'M 350 740 L 370 740 L 370 720 L 630 720 L 630 740 L 650 740 L 650 760 L 350 760 Z',
+  // Hollow square mouth (6x8 cells, 1-cell border) reading as "open".
+  openO:
+    'M 420 660 L 580 660 L 580 800 L 420 800 Z M 440 680 L 560 680 L 560 780 L 440 780 Z',
+  // Tiny 2x2 square.
+  tinyO: 'M 485 705 L 515 705 L 515 735 L 485 735 Z',
+  // Single-pixel horizontal bar.
+  flat: 'M 320 730 L 680 730 L 680 750 L 320 750 Z',
+  // Stairstep smirk: low-to-high diagonal in 3 steps.
+  smirk:
+    'M 380 740 L 460 740 L 460 720 L 540 720 L 540 700 L 620 700 L 620 720 L 540 720 L 540 740 L 460 740 L 460 760 L 380 760 Z',
+  // Tall rectangle for the sustained sing note.
+  singO: 'M 460 660 L 540 660 L 540 820 L 460 820 Z',
+  // Zigzag wave of 4 stairsteps.
+  wavy:
+    'M 320 720 L 400 720 L 400 740 L 480 740 L 480 720 L 560 720 L 560 740 L 640 740 L 640 760 L 320 760 Z',
+  // Open square + pink tongue rect dangling.
+  tongueOut:
+    'M 360 680 L 640 680 L 640 800 L 360 800 Z M 380 700 L 620 700 L 620 780 L 380 780 Z',
+  // Lipsync poses — pixel-style mouth shapes, kept blocky for cadence reads
+  // even during speech.
+  talk_a: 'M 360 680 L 640 680 L 640 800 L 360 800 Z',
+  talk_e: 'M 340 710 L 660 710 L 660 770 L 340 770 Z',
+  talk_o: 'M 440 690 L 560 690 L 560 790 L 440 790 Z',
+  talk_m: 'M 380 730 L 620 730 L 620 750 L 380 750 Z',
+  talk_i: 'M 340 720 L 660 720 L 660 740 L 340 740 Z',
+  talk_u: 'M 460 710 L 540 710 L 540 770 L 460 770 Z',
+};
+
+// Public dispatcher. Falls back to "curve" for unknown families (defensive
+// against forward-compatible JSONB rows from a future family).
+export function mouthPathFor(family: MouthFamily, expression: MouthStyle): string {
+  const table = family === 'pixel' ? pixelMouthPaths : curveMouthPaths;
+  return table[expression];
+}
+
+// Tongue path. Only the "tongueOut" expression has a tongue; both families
+// share the same tongue position so it lines up under the mouth opening.
+export function tonguePath(expression: MouthStyle): string {
+  return expression === 'tongueOut'
+    ? 'M 470 770 Q 460 870 510 880 Q 560 870 540 770 Z'
+    : '';
+}
+
+// Legacy export retained for any test or import that still references the
+// curve-family map directly. New callers should use mouthPathFor.
+export const mouthPaths = curveMouthPaths;

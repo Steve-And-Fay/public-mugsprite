@@ -9,7 +9,7 @@ import {
 } from '@shared/moods';
 import { Accessories, Brows, Eye, Teeth } from './FaceParts';
 import { FaceInkContext, type FaceInk } from './faceInk';
-import { mouthPaths, tonguePath } from './mouthPaths';
+import { mouthPathFor, tonguePath } from './mouthPaths';
 
 // Flip the linework to a light token when the agent picked a dark color, so
 // the eyes/brows/mouth don't disappear into a black-on-black face. `paper`
@@ -239,7 +239,8 @@ function FaceImpl({
     }
     onCustomize(agentId);
   };
-  const effectiveMouth: MouthStyle = isTalking && talkMouth ? talkMouth : resolved.mouth;
+  const effectiveMouth: MouthStyle =
+    isTalking && talkMouth ? talkMouth : resolved.mouthExpression;
   const faceInk = useMemo(() => inkForBackground(color), [color]);
 
   const timings = useMemo(
@@ -356,7 +357,7 @@ function FaceImpl({
               <svg
                 className="face-svg"
                 viewBox="0 0 1000 1000"
-                data-eyes={resolved.eyes}
+                data-eyes={resolved.eyesExpression}
                 xmlns="http://www.w3.org/2000/svg"
                 preserveAspectRatio="xMidYMid meet"
                 role="img"
@@ -375,7 +376,13 @@ function FaceImpl({
                     animationDelay: `${timings.eyeDelay}s`,
                   }}
                 >
-                  <Eye style={resolved.eyes} cx={320} cy={380} isLeft={true} />
+                  <Eye
+                    family={resolved.eyesFamily}
+                    expression={resolved.eyesExpression}
+                    cx={320}
+                    cy={380}
+                    isLeft={true}
+                  />
                 </g>
                 <g
                   className="rightEye"
@@ -384,7 +391,13 @@ function FaceImpl({
                     animationDelay: `${timings.eyeDelay}s`,
                   }}
                 >
-                  <Eye style={resolved.eyes} cx={680} cy={380} isLeft={false} />
+                  <Eye
+                    family={resolved.eyesFamily}
+                    expression={resolved.eyesExpression}
+                    cx={680}
+                    cy={380}
+                    isLeft={false}
+                  />
                 </g>
                 <g
                   className="mouthGroup"
@@ -400,7 +413,7 @@ function FaceImpl({
                     strokeWidth={6}
                     strokeLinejoin="round"
                     strokeLinecap="round"
-                    d={mouthPaths[effectiveMouth]}
+                    d={mouthPathFor(resolved.mouthFamily, effectiveMouth)}
                   />
                   <g className="teeth">
                     <Teeth mouth={effectiveMouth} />

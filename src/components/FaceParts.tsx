@@ -1,4 +1,4 @@
-import type { BrowStyle, EyeStyle, MoodKey, MouthStyle } from '@shared/moods';
+import type { BrowStyle, EyeFamily, EyeStyle, MoodKey, MouthStyle } from '@shared/moods';
 import { useFaceInk } from './faceInk';
 
 // React/JSX SVG primitives for every facial feature. Rendering these as real
@@ -6,13 +6,33 @@ import { useFaceInk } from './faceInk';
 // elements activate properly under the live SVG document.
 
 interface EyeProps {
+  family: EyeFamily;
+  expression: EyeStyle;
+  cx: number;
+  cy: number;
+  isLeft: boolean;
+}
+
+// Dispatcher: pick the family-specific renderer, hand it the expression.
+// Every family MUST implement every EyeStyle key — failing tests catch gaps.
+export function Eye({ family, expression, cx, cy, isLeft }: EyeProps) {
+  if (family === 'pixel') {
+    return <PixelEye style={expression} cx={cx} cy={cy} isLeft={isLeft} />;
+  }
+  return <RoundEye style={expression} cx={cx} cy={cy} isLeft={isLeft} />;
+}
+
+interface FamilyEyeProps {
   style: EyeStyle;
   cx: number;
   cy: number;
   isLeft: boolean;
 }
 
-export function Eye({ style, cx, cy, isLeft }: EyeProps) {
+// The "Round" family: the original Mugsprite eyes. Smooth Bezier ellipses,
+// continuous animations, blinking sclera highlights. This is the built-in
+// family — every existing room renders with it.
+function RoundEye({ style, cx, cy, isLeft }: FamilyEyeProps) {
   const { ink, paper, isDark } = useFaceInk();
   // Decorative shadows under closed-eye arcs are 8% ink on light faces. On
   // dark faces that's a near-invisible cream wash, so raise the opacity to
@@ -238,6 +258,223 @@ export function Eye({ style, cx, cy, isLeft }: EyeProps) {
           </ellipse>
           <ellipse cx={cx + 8} cy={cy - 26} rx={6} ry={9} fill={paper} opacity={0.8} />
         </>
+      );
+  }
+}
+
+// The "Pixel" family: 8-bit blocky eyes built from rect primitives. Hard pixel
+// edges (shape-rendering crispEdges) and no Bezier curves. Animations use
+// discrete rect swaps rather than smooth interpolation so the retro feel
+// carries through into motion. Every expression in EyeStyle is implemented.
+function PixelEye({ style, cx, cy, isLeft }: FamilyEyeProps) {
+  const { ink, paper } = useFaceInk();
+  // Common grid: each "pixel" is a 16x16 rect. The eye spans roughly a
+  // 144x144 region centered on (cx, cy).
+  const P = 16;
+  const shape = 'crispEdges' as const;
+
+  switch (style) {
+    case 'happy':
+      // 3-rect arc curving up: an 8-bit grin made of stairsteps.
+      return (
+        <g shapeRendering={shape}>
+          <rect x={cx - 3 * P} y={cy + P} width={2 * P} height={P} fill={ink} />
+          <rect x={cx - P} y={cy} width={2 * P} height={P} fill={ink} />
+          <rect x={cx + P} y={cy + P} width={2 * P} height={P} fill={ink} />
+        </g>
+      );
+    case 'sad':
+      // Drooping arc (inverse of happy) plus a tear pixel.
+      return (
+        <g shapeRendering={shape}>
+          <rect x={cx - 3 * P} y={cy - P} width={2 * P} height={P} fill={ink} />
+          <rect x={cx - P} y={cy} width={2 * P} height={P} fill={ink} />
+          <rect x={cx + P} y={cy - P} width={2 * P} height={P} fill={ink} />
+          <rect x={cx + 2 * P} y={cy + 2 * P} width={P} height={P} fill="#5599DD">
+            <animate attributeName="opacity" values="0;1;1;0" dur="2.5s" repeatCount="indefinite" />
+          </rect>
+        </g>
+      );
+    case 'wide':
+      // 5x5 outer block, 3x3 inner pupil that pulses.
+      return (
+        <g shapeRendering={shape}>
+          <rect
+            x={cx - 2.5 * P}
+            y={cy - 2.5 * P}
+            width={5 * P}
+            height={5 * P}
+            fill={paper}
+            stroke={ink}
+            strokeWidth={6}
+          />
+          <rect x={cx - 1.5 * P} y={cy - 1.5 * P} width={3 * P} height={3 * P} fill={ink}>
+            <animate
+              attributeName="width"
+              values={`${3 * P};${2 * P};${3 * P}`}
+              dur="0.6s"
+              repeatCount="indefinite"
+            />
+          </rect>
+        </g>
+      );
+    case 'closed':
+      // Single horizontal pixel-bar with subtle bob.
+      return (
+        <g shapeRendering={shape}>
+          <rect x={cx - 3 * P} y={cy} width={6 * P} height={P} fill={ink}>
+            <animate
+              attributeName="y"
+              values={`${cy};${cy - P / 2};${cy}`}
+              dur="3.5s"
+              repeatCount="indefinite"
+            />
+          </rect>
+        </g>
+      );
+    case 'lookUp':
+      // 3x4 eye box, pupil rect at top, slides horizontally to read as "looking around"
+      return (
+        <g shapeRendering={shape}>
+          <rect
+            x={cx - 1.5 * P}
+            y={cy - 2 * P}
+            width={3 * P}
+            height={4 * P}
+            fill={ink}
+          />
+          <rect x={cx - 0.5 * P} y={cy - 1.5 * P} width={P} height={P} fill={paper}>
+            <animate
+              attributeName="x"
+              values={`${cx - 0.5 * P};${cx - 1.5 * P};${cx - 0.5 * P}`}
+              dur="3s"
+              repeatCount="indefinite"
+            />
+          </rect>
+        </g>
+      );
+    case 'narrow':
+      // Thin horizontal strip with a small pupil that darts side to side.
+      return (
+        <g shapeRendering={shape}>
+          <rect x={cx - 2.5 * P} y={cy} width={5 * P} height={P} fill={ink} />
+          <rect x={cx + P} y={cy} width={P} height={P} fill={paper}>
+            <animate
+              attributeName="x"
+              values={`${cx + P};${cx - 2 * P};${cx + P}`}
+              dur="1.2s"
+              repeatCount="indefinite"
+            />
+          </rect>
+        </g>
+      );
+    case 'sparkle':
+      // Solid pixel pupil + 4-pixel star sparkle pulsing in the corner.
+      return (
+        <g shapeRendering={shape}>
+          <rect
+            x={cx - 1.5 * P}
+            y={cy - 2 * P}
+            width={3 * P}
+            height={4 * P}
+            fill={ink}
+          />
+          <g style={{ transformOrigin: `${cx - P / 2}px ${cy - P}px` }}>
+            <rect x={cx - P} y={cy - 1.5 * P} width={P} height={P} fill={paper}>
+              <animate
+                attributeName="opacity"
+                values="1;0.4;1"
+                dur="1.4s"
+                repeatCount="indefinite"
+              />
+            </rect>
+            <rect x={cx} y={cy - 1.5 * P} width={P / 2} height={P / 2} fill={paper} opacity={0.85} />
+          </g>
+        </g>
+      );
+    case 'asymm': {
+      // Left eye larger, right smaller — pixel-style asymmetric reads "off".
+      const w = isLeft ? 4 * P : 3 * P;
+      const h = isLeft ? 5 * P : 3.5 * P;
+      return (
+        <g shapeRendering={shape}>
+          <rect x={cx - w / 2} y={cy - h / 2} width={w} height={h} fill={ink}>
+            <animate
+              attributeName="width"
+              values={`${w};${w - P};${w}`}
+              dur="2.4s"
+              repeatCount="indefinite"
+            />
+          </rect>
+          <rect
+            x={cx - P / 2}
+            y={cy - h / 2 + P}
+            width={P}
+            height={P}
+            fill={paper}
+          />
+        </g>
+      );
+    }
+    case 'cross': {
+      // Pupils pushed into opposite corners — pixel-crossed-eyes.
+      const offset = isLeft ? P : -P;
+      return (
+        <g shapeRendering={shape}>
+          <rect
+            x={cx - 1.5 * P}
+            y={cy - 2 * P}
+            width={3 * P}
+            height={4 * P}
+            fill={ink}
+          />
+          <rect x={cx + offset - P / 2} y={cy - 1.5 * P} width={P} height={P} fill={paper}>
+            <animate
+              attributeName="y"
+              values={`${cy - 1.5 * P};${cy - 2 * P};${cy - 1.5 * P}`}
+              dur="2.5s"
+              repeatCount="indefinite"
+            />
+          </rect>
+        </g>
+      );
+    }
+    case 'x':
+      // 5-pixel X — classic 8-bit "dead" eyes.
+      return (
+        <g shapeRendering={shape}>
+          {Array.from({ length: 5 }).map((_, i) => {
+            const off = (i - 2) * P;
+            return (
+              <g key={i}>
+                <rect x={cx + off} y={cy + off} width={P} height={P} fill={ink} />
+                <rect x={cx + off} y={cy - off - P} width={P} height={P} fill={ink} />
+              </g>
+            );
+          })}
+        </g>
+      );
+    case 'normal':
+    default:
+      // 3x4 pixel block with a small white catchlight that drifts.
+      return (
+        <g shapeRendering={shape}>
+          <rect
+            x={cx - 1.5 * P}
+            y={cy - 2 * P}
+            width={3 * P}
+            height={4 * P}
+            fill={ink}
+          />
+          <rect x={cx - 0.5 * P} y={cy - 1.5 * P} width={P} height={P} fill={paper}>
+            <animate
+              attributeName="x"
+              values={`${cx - 0.5 * P};${cx - 1.5 * P};${cx - 0.5 * P}`}
+              dur="6s"
+              repeatCount="indefinite"
+            />
+          </rect>
+        </g>
       );
   }
 }
