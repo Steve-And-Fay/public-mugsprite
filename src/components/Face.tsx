@@ -389,6 +389,27 @@ function FaceImpl({
                 role="img"
                 aria-label={`${name} agent — ${moodDef.label}`}
               >
+                {/* In-SVG gradient overlay. Drawn at the back so face features
+                    render on top. Inside the SVG it's guaranteed to render
+                    within the clipped silhouette (heart/circle/blob/etc.)
+                    regardless of how CSS clip-path treats container-level
+                    backgrounds. Subtle enough to not muddy the features. */}
+                <defs>
+                  <linearGradient id="mug-face-shading" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ffffff" stopOpacity="0.32" />
+                    <stop offset="40%" stopColor="#ffffff" stopOpacity="0" />
+                    <stop offset="60%" stopColor="#000000" stopOpacity="0" />
+                    <stop offset="100%" stopColor="#000000" stopOpacity="0.28" />
+                  </linearGradient>
+                </defs>
+                <rect
+                  x={0}
+                  y={0}
+                  width={1000}
+                  height={1000}
+                  fill="url(#mug-face-shading)"
+                  pointerEvents="none"
+                />
                 <g className="hair" aria-hidden>
                   <Hair family={resolved.hairFamily} />
                 </g>
