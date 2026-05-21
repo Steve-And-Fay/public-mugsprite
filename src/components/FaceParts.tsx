@@ -1306,10 +1306,11 @@ export function Mustache({ family }: { family: MustacheFamily }) {
         />
       );
     case 'thick':
-      // Chunky chevron mustache.
+      // Chunky chevron with a clear philtrum dip in the middle and two
+      // distinct lobes that hang slightly below the corners of the lip line.
       return (
         <path
-          d="M 340 580 Q 400 560 500 590 Q 600 560 660 580 Q 660 640 500 625 Q 340 640 340 580 Z"
+          d="M 290 600 Q 320 570 380 600 Q 440 625 500 608 Q 560 625 620 600 Q 680 570 710 600 Q 700 638 660 648 Q 600 660 540 632 Q 500 622 460 632 Q 400 660 340 648 Q 300 638 290 600 Z"
           fill={ink}
         />
       );
@@ -1332,19 +1333,21 @@ export function Beard({ family }: { family: BeardFamily }) {
   const { ink } = useFaceInk();
   switch (family) {
     case 'goatee':
-      // Pointed chin tuft below the mouth.
+      // Inverted-triangle chin tuft. Wider at the top (mouth corners) and
+      // points sharply at y=950, giving an unmistakable goatee silhouette.
       return (
         <path
-          d="M 460 820 Q 500 810 540 820 Q 530 900 500 940 Q 470 900 460 820 Z"
+          d="M 430 820 Q 500 815 570 820 Q 555 880 525 925 Q 510 945 500 955 Q 490 945 475 925 Q 445 880 430 820 Z"
           fill={ink}
         />
       );
     case 'full':
-      // Full chin-wrapping beard. Drawn under the mouth area so the mouth
-      // shape remains the visual focus.
+      // Chin-wrap beard with a clear silhouette: starts at the jawline,
+      // wraps around the chin, leaves the mouth area visible above. The
+      // top edge dips down toward the corners (cheek to jaw to chin).
       return (
         <path
-          d="M 250 770 Q 300 760 360 800 Q 420 820 500 825 Q 580 820 640 800 Q 700 760 750 770 Q 760 860 700 920 Q 600 970 500 970 Q 400 970 300 920 Q 240 860 250 770 Z"
+          d="M 230 820 Q 250 880 310 920 Q 400 965 500 965 Q 600 965 690 920 Q 750 880 770 820 Q 720 845 650 850 Q 575 855 500 855 Q 425 855 350 850 Q 280 845 230 820 Z"
           fill={ink}
         />
       );

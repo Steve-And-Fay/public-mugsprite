@@ -224,12 +224,49 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
         </header>
 
         <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          {/* LEFT — tabs + active tab's picker grid */}
-          <div className="flex flex-col min-h-0 border-b-[3px] lg:border-b-0 lg:border-r-[3px] border-ink">
-            <div
-              role="tablist"
+          {/* LEFT — sidebar nav (lg+) or horizontal scroll tabs (mobile) + active panel content */}
+          <div className="flex flex-col lg:flex-row min-h-0 border-b-[3px] lg:border-b-0 lg:border-r-[3px] border-ink">
+            {/* Mobile: horizontal scroll strip with fade affordance */}
+            <div className="lg:hidden relative shrink-0">
+              <div
+                role="tablist"
+                aria-label="Customization categories"
+                className="flex gap-1 overflow-x-auto px-3 pt-3 pb-0 scroll-smooth"
+              >
+                {TAB_IDS.map((id) => {
+                  const active = tab === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      aria-controls={`tabpanel-${id}`}
+                      id={`tab-${id}`}
+                      onClick={() => setTab(id)}
+                      className={`font-display text-[10px] tracking-widest border-2 border-ink rounded-t-lg px-3 py-2 shrink-0 transition ${
+                        active
+                          ? 'bg-accent-pink border-b-paper -mb-[2px] z-10'
+                          : 'bg-paper opacity-70 hover:opacity-100'
+                      }`}
+                    >
+                      {TAB_LABELS[id].toUpperCase()}
+                    </button>
+                  );
+                })}
+                <div className="shrink-0 w-8 border-b-2 border-ink" aria-hidden />
+              </div>
+              {/* Right edge fade — visual hint that the strip scrolls */}
+              <div
+                className="pointer-events-none absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-paper to-transparent"
+                aria-hidden
+              />
+            </div>
+
+            {/* Desktop: vertical sidebar nav, all 10 tabs always visible */}
+            <nav
               aria-label="Customization categories"
-              className="flex gap-1 overflow-x-auto px-3 sm:px-4 pt-3 pb-0 shrink-0"
+              className="hidden lg:flex flex-col gap-1 shrink-0 w-32 border-r-[3px] border-ink p-3 overflow-y-auto"
             >
               {TAB_IDS.map((id) => {
                 const active = tab === id;
@@ -242,18 +279,17 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                     aria-controls={`tabpanel-${id}`}
                     id={`tab-${id}`}
                     onClick={() => setTab(id)}
-                    className={`font-display text-[10px] sm:text-xs tracking-widest border-2 border-ink rounded-t-lg px-3 py-2 shrink-0 transition ${
+                    className={`text-left font-display text-[10px] tracking-widest border-2 border-ink rounded px-2 py-2 transition ${
                       active
-                        ? 'bg-accent-pink border-b-paper -mb-[2px] z-10'
-                        : 'bg-paper opacity-70 hover:opacity-100'
+                        ? 'bg-accent-pink shadow-brutal-sm -translate-x-[1px] -translate-y-[1px]'
+                        : 'bg-paper opacity-75 hover:opacity-100'
                     }`}
                   >
                     {TAB_LABELS[id].toUpperCase()}
                   </button>
                 );
               })}
-              <div className="flex-1 border-b-2 border-ink" aria-hidden />
-            </div>
+            </nav>
 
             <div
               role="tabpanel"

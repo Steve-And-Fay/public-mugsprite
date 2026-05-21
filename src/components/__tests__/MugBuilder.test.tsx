@@ -64,7 +64,7 @@ describe('MugBuilder', () => {
     expect(screen.getAllByText('SLEEPY').length).toBeGreaterThan(0);
 
     // Switch to the Mouth tab — now the mouth families render.
-    await user.click(screen.getByRole('tab', { name: /mouth/i }));
+    await user.click(screen.getAllByRole('tab', { name: /mouth/i })[0]!);
     expect(screen.getByText('CURVE')).toBeInTheDocument();
     // PIXEL is the shared label for both pixel families; it's still here in
     // the mouth tab too.
@@ -91,7 +91,7 @@ describe('MugBuilder', () => {
     // Eyes tab is open by default — pick Pixel eyes.
     await user.click(screen.getByText('PIXEL'));
     // Switch to Mouth tab, then pick Pixel mouth.
-    await user.click(screen.getByRole('tab', { name: /mouth/i }));
+    await user.click(screen.getAllByRole('tab', { name: /mouth/i })[0]!);
     await user.click(screen.getByText('PIXEL'));
     await user.click(screen.getByRole('button', { name: /save/i }));
 
