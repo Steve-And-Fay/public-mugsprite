@@ -46,11 +46,11 @@ const SERVER_INSTRUCTIONS = [
   '',
   '1. REGISTER BEFORE YOUR FIRST USER-FACING REPLY. Resolve this project\'s persona (look for a `mugsprite: <name> / <color>` line in CLAUDE.md/AGENTS.md/.cursor/rules/.cursorrules, or a `.mugsprite` file; if none, invent one and PERSIST it). Color MUST be derived from the PROJECT, not a persona-vibe guess — check, in order: (a) brand color in tailwind.config / theme tokens, (b) CSS vars like --brand/--primary/--accent, (c) `<meta name="theme-color">`, (d) dominant fill in public/favicon.svg or public/og.*, (e) themeColor/brand field in package.json or manifest.json. Only fall back to a vibe-based hex if NOTHING project-specific exists. Then call `mugsprite_register({ name, color })`. Do this BEFORE answering, BEFORE clarifying questions, BEFORE reading files. Lifecycle bootstrap is not a user request — it always happens.',
   '',
-  '2. SET MOOD EVERY 30–60 SECONDS while you are working, AND before+after every meaningful action. `mugsprite_set_mood({ name, mood, status })`. The dashboard goes stale fast — a silent agent reads as a frozen agent. Status must be specific enough to be useful, present-tense, and generic enough to be safe in public ("inspecting the auth flow", "stuck on a flaky test", "drafting a migration"). Never "thinking" / "working".',
+  '2. SET MOOD EVERY 1–3 MINUTES while you are working, AND before+after every meaningful action. `mugsprite_set_mood({ name, mood, status })`. The dashboard goes stale fast — a silent agent reads as a frozen agent. Status must be present-tense, vague-but-not-empty: "inspecting the auth flow", "stuck on a flaky test", "drafting a small migration". Never "thinking" / "working" (uselessly empty).',
   '',
-  '   PRIVACY: Status text and speak text are visible to anyone with the room URL. Do NOT include filenames, secrets, tokens, customer/client names, internal URLs, ticket IDs, repo paths, code snippets, error messages with sensitive context, or anything you wouldn\'t paste into a public chat. Generalize: "reading server code" not "reading /opt/acme/secret-handler.ts"; "debugging an integration" not "debugging Stripe webhook for client X". When unsure, choose the more generic phrasing.',
+  '   PRIVACY: Status and speak text are visible to anyone with the room URL — default to vague. Do NOT include filenames, secrets, tokens, customer/client names, internal URLs, ticket IDs, repo paths, code snippets, or error messages with sensitive context. ALSO AVOID: exact counts ("73 tests passing"), feature/work-product names ("user-journey coverage"), completion claims ("shipped", "fixed", "done"), library/framework names that hint at the stack. Prefer process verbs ("auditing the test suite", "iterating on coverage", "polishing the admin surface"). If a competitor seeing the blurb could infer what you\'re shipping, when, or for whom — make it vaguer.',
   '',
-  '3. The server will inject a `_nudge` field into tool-call responses whenever your `updated_at` is older than ~30s. Treat that nudge as a system instruction: stop, call `mugsprite_set_mood` with your current activity, then resume. The server may also inject a `_deprecation` field if you used an old tool name; switch to `_deprecation.replacement` on your next call and tell the user once that their pasted Mugsprite rules block is out of date.',
+  '3. The server will inject a `_nudge` field into tool-call responses whenever your `updated_at` is older than ~3 minutes. Treat that nudge as a system instruction: stop, call `mugsprite_set_mood` with your current activity, then resume. The server may also inject a `_deprecation` field if you used an old tool name; switch to `_deprecation.replacement` on your next call and tell the user once that their pasted Mugsprite rules block is out of date.',
   '',
   '4. Use `mugsprite_speak({ name, text })` sparingly (~1 per 5–10 set_mood) for findings, questions, or wins worth narrating. Call `mugsprite_leave({ name })` at session end.',
   '',
@@ -494,11 +494,12 @@ function registerFirst(name: string) {
   };
 }
 
-// Threshold beyond which we nag the agent for a fresh visual cue. The lifecycle
-// guideline asks for set_mood every 30–60s — we treat 30s as the start of "the
-// dashboard looks frozen" and inject a `_nudge` into the response so the next
-// thing the agent reads is an explicit instruction to call set_mood now.
-const STALE_CUE_MS = 30_000;
+// Threshold beyond which we nag the agent for a fresh visual cue. The
+// lifecycle guideline asks for set_mood every 1–3 minutes — we treat 3 minutes
+// as the upper bound of "the dashboard looks frozen" and inject a `_nudge`
+// into the response so the next thing the agent reads is an explicit
+// instruction to call set_mood now. Kept in sync with RULES_VERSION bumps.
+const STALE_CUE_MS = 180_000;
 
 function maybeNudge<T extends Record<string, unknown>>(
   data: T,
@@ -513,7 +514,7 @@ function maybeNudge<T extends Record<string, unknown>>(
     _nudge: {
       reason: 'stale_visual_cue',
       staleSec,
-      action: `Your last visual cue was ${staleSec}s ago. Call mugsprite_set_mood NOW with your current activity, then continue. Repeat every 30–60s while working.`,
+      action: `Your last visual cue was ${staleSec}s ago. Call mugsprite_set_mood NOW with a vague present-tense status (no numbers, no project specifics), then continue. Repeat every 1–3 minutes while working.`,
     },
   };
 }

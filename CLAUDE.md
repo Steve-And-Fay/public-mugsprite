@@ -92,5 +92,6 @@ A user can: visit the site → click "Create room" → land on a dashboard with 
 
 - The `Face` component name is descriptive of the SVG primitive, not branding. Don't rename it.
 - The MCP tool prefix is `mugsprite_*` (underscore form — dotted names like `mugsprite.register` get filtered by stricter MCP clients like Cursor). Don't propose `face_*` or `mug_*`.
+- Mugsprite status cadence + privacy posture (applies when you're working on THIS repo with mugsprite registered): call `mugsprite_set_mood` every 1–3 minutes. Statuses must be vague-but-not-empty, present-tense, no numbers, no completion claims, no library/framework names. "iterating on test coverage" — yes. "73 tests passing; user-journey coverage shipped" — no. See `src/shared/rules.ts` for the canonical guidance.
 - The visual style is original work — generic flat-2D character primitives (ellipses, paths, basic SMIL animations). Don't introduce comparisons to specific licensed characters in code comments, docs, or marketing copy.
 - Run `npm run verify` (typecheck + lint + test) before declaring work done.
