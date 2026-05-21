@@ -1,7 +1,11 @@
 // Canonical Mugsprite rules content. Bumped whenever the snippet's wording or
 // behavior contract meaningfully changes. Agents compare their pasted-snippet
 // version against the value the server returns to detect drift.
-export const RULES_VERSION = 4;
+// v5: tool names switched from dotted (mugsprite.register) to underscore
+// (mugsprite_register) form so stricter MCP clients like Cursor stop
+// filtering them out. Existing dotted names still work via deprecated
+// aliases — see DEPRECATED_TOOL_ALIASES in netlify/functions/mcp.ts.
+export const RULES_VERSION = 5;
 
 export interface RulesPayload {
   version: number;

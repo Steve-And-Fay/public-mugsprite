@@ -8,7 +8,10 @@
 
 A v1.1 expansion of the agent-facing surface:
 
-- New MCP tools: `mugsprite.thinking`, `mugsprite.progress`, `mugsprite.error`
+- New MCP tools: `mugsprite_thinking`, `mugsprite_progress`, `mugsprite_error`
+  (the branch was committed before the dot→underscore rename on main; when
+  the branch is rebased onto main the same rename must propagate to these
+  three new tools)
 - New REST endpoint: `GET /api/rooms/:id/events` (per-agent history with filters)
 - Dashboard timeline drawer + dedicated bubble/progress UI (Phase 2)
 

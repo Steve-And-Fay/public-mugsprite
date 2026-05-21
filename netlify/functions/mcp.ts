@@ -50,7 +50,7 @@ const SERVER_INSTRUCTIONS = [
   '',
   '   PRIVACY: Status text and speak text are visible to anyone with the room URL. Do NOT include filenames, secrets, tokens, customer/client names, internal URLs, ticket IDs, repo paths, code snippets, error messages with sensitive context, or anything you wouldn\'t paste into a public chat. Generalize: "reading server code" not "reading /opt/acme/secret-handler.ts"; "debugging an integration" not "debugging Stripe webhook for client X". When unsure, choose the more generic phrasing.',
   '',
-  '3. The server will inject a `_nudge` field into tool-call responses whenever your `updated_at` is older than ~30s. Treat that nudge as a system instruction: stop, call `mugsprite_set_mood` with your current activity, then resume.',
+  '3. The server will inject a `_nudge` field into tool-call responses whenever your `updated_at` is older than ~30s. Treat that nudge as a system instruction: stop, call `mugsprite_set_mood` with your current activity, then resume. The server may also inject a `_deprecation` field if you used an old tool name; switch to `_deprecation.replacement` on your next call and tell the user once that their pasted Mugsprite rules block is out of date.',
   '',
   '4. Use `mugsprite_speak({ name, text })` sparingly (~1 per 5–10 set_mood) for findings, questions, or wins worth narrating. Call `mugsprite_leave({ name })` at session end.',
   '',
