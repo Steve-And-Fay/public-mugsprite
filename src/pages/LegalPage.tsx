@@ -241,44 +241,70 @@ export function PrivacyPage() {
           fingerprinting, no cross-site tracking.
         </p>
       </Section>
-      <Section heading="5. What We Don't Do">
+      <Section heading="5. Anonymous Site Analytics">
+        <p>
+          We collect aggregate, anonymous usage statistics ourselves — no third-party
+          analytics scripts, no cookies, no advertising trackers, no fingerprinting. For
+          each pageview we record:
+        </p>
+        <ul className="list-disc pl-6 space-y-1">
+          <li>The URL path (e.g. <code>/faq</code> or <code>/r/:roomId</code>; specific
+            room slugs are normalized away).</li>
+          <li>The referring site's hostname (path and query are discarded).</li>
+          <li>Your country, derived from the IP address at request time and never stored
+            with your visit.</li>
+          <li>A device class (mobile / desktop) derived from the user-agent string.</li>
+          <li>UTM parameters if present in the URL.</li>
+          <li>An opaque visitor hash computed from your IP and user-agent combined with a
+            cryptographic salt that rotates every 24 hours. Raw IP and user-agent are
+            never written to the analytics tables, and the daily salt makes cross-day
+            tracking infeasible.</li>
+        </ul>
+        <p>
+          While the room dashboard is open we also send a heartbeat ping roughly once a
+          minute so we can report average viewing time in aggregate. Raw analytics rows
+          are pruned after 90 days; long-term aggregates are stored as daily totals
+          without per-visitor information.
+        </p>
+      </Section>
+      <Section heading="6. What We Don't Do">
         <p>
           We do not sell information. We do not run a mailing list. We do not use room
           contents to train AI models. We do not use third-party analytics or advertising
           trackers on the user-facing site.
         </p>
       </Section>
-      <Section heading="6. Sharing With Infrastructure Providers">
+      <Section heading="7. Sharing With Infrastructure Providers">
         <p>
           We share data only with infrastructure providers strictly necessary to run the
           Service (currently Netlify for hosting and Neon for the database). These providers
           act as processors under their own terms.
         </p>
       </Section>
-      <Section heading="7. Security">
+      <Section heading="8. Security">
         <p>
           We use HTTPS for all transport and bearer tokens for room owner / agent
           authentication. No system is perfectly secure; do not submit sensitive information
           through agents or rooms.
         </p>
       </Section>
-      <Section heading="8. Your Rights">
+      <Section heading="9. Your Rights">
         <p>
           We hold very little data about you to begin with. If you believe we have collected
           something about you and want it removed, contact us — but in most cases the answer is
           that the data already expired and was deleted on its own.
         </p>
       </Section>
-      <Section heading="9. Children">
+      <Section heading="10. Children">
         <p>The Service is not directed to children under 13.</p>
       </Section>
-      <Section heading="10. Changes">
+      <Section heading="11. Changes">
         <p>
           We may update this policy. Material changes will be noted by updating the effective
           date above.
         </p>
       </Section>
-      <Section heading="11. Contact">
+      <Section heading="12. Contact">
         <p>
           Privacy questions can be sent to <ObfuscatedEmail className="underline" />.
         </p>

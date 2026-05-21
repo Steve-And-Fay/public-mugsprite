@@ -1,4 +1,13 @@
+import { randomBytes } from 'node:crypto';
 import { neon } from '@netlify/neon';
+import {
+  preGenerateTomorrowsSalt,
+  pruneOldPageviews,
+  pruneOldPings,
+  pruneOldSalts,
+  rollupYesterdaysPageviews,
+  rollupYesterdaysPings,
+} from './_lib/analyticsDb';
 
 // Scheduled cleanup: enforces the 24-hour-post-expiration deletion promised in
 // the Privacy Policy. Rooms live 7 days from creation, then have a 24h
@@ -52,12 +61,44 @@ export default async (): Promise<Response> => {
       if (code !== '42P01') throw err;
     }
 
+    // Analytics housekeeping. Each step is gated independently so a missing
+    // analytics table (DB not migrated yet) doesn't block the room cleanup
+    // that ran above.
+    const analytics = {
+      tomorrow_salt_generated: false,
+      salts_pruned: 0,
+      pageview_rollups: 0,
+      ping_rollups: 0,
+      pageviews_pruned: 0,
+      pings_pruned: 0,
+    };
+    try {
+      // Pre-generate tomorrow's salt so midnight UTC traffic doesn't race
+      // against the first edge function call. Random 32 bytes; the edge
+      // helper accepts the value as-is.
+      await preGenerateTomorrowsSalt(randomBytes(32).toString('hex'));
+      analytics.tomorrow_salt_generated = true;
+      analytics.salts_pruned = await pruneOldSalts();
+      analytics.pageview_rollups = await rollupYesterdaysPageviews();
+      analytics.ping_rollups = await rollupYesterdaysPings();
+      analytics.pageviews_pruned = await pruneOldPageviews();
+      analytics.pings_pruned = await pruneOldPings();
+    } catch (err) {
+      const code = (err as { code?: string } | null)?.code;
+      if (code !== '42P01') {
+        console.error('analytics cleanup failed', err);
+      }
+      // 42P01 = undefined_table; safe to ignore on a fresh DB without
+      // the analytics migration applied yet.
+    }
+
     const summary = {
       kind: 'mugsprite_cleanup',
       at: new Date().toISOString(),
       rooms_deleted: rows.length,
       events_pruned: orphans.length,
       rate_limits_pruned: rateLimitsPruned,
+      analytics,
       cutoff: cutoffIso,
     };
     console.log(JSON.stringify(summary));

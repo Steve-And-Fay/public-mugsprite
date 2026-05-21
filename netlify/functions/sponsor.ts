@@ -5,6 +5,8 @@
 // in the log. No cookies, no fingerprinting, no PII. The log line is intended
 // for monthly aggregation into the sponsor report.
 
+import { createHash, randomBytes } from 'node:crypto';
+import { getOrCreateTodaysSalt, insertSponsorClick } from './_lib/analyticsDb';
 import { methodNotAllowed } from './_lib/http';
 
 const ALLOWED_HOSTS = new Set([
@@ -71,6 +73,28 @@ export default async (req: Request): Promise<Response> => {
       at: new Date().toISOString(),
     }),
   );
+
+  // First-party analytics attribution. We compute the same daily-rotating
+  // visitor_hash used elsewhere so a visitor who bounces through several
+  // pageviews and clicks a sponsor shows up as the same person within the day.
+  // Failures are swallowed: the redirect must always succeed, even if the
+  // analytics insert fails — broken attribution shouldn't cost the sponsor
+  // a click. fire-and-forget keeps the redirect latency tight.
+  void (async () => {
+    try {
+      const ua = req.headers.get('user-agent') ?? '';
+      const candidate = randomBytes(32).toString('hex');
+      const salt = await getOrCreateTodaysSalt(candidate);
+      const visitorHash = createHash('sha256').update(`${salt}|${ip ?? 'unknown'}|${ua}`).digest('hex');
+      await insertSponsorClick({
+        visitorHash,
+        sourcePath: ref,
+        sponsorSlug: dest.hostname,
+      });
+    } catch (err) {
+      console.error('sponsor click attribution failed', err);
+    }
+  })();
 
   return Response.redirect(dest.toString(), 302);
 };

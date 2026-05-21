@@ -1,6 +1,7 @@
 import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { useAnalytics } from './lib/useAnalytics';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const RoomPage = lazy(() => import('./pages/RoomPage'));
@@ -13,6 +14,7 @@ const TermsPage = lazy(() =>
 const PrivacyPage = lazy(() =>
   import('./pages/LegalPage').then((m) => ({ default: m.PrivacyPage })),
 );
+const AdminPage = lazy(() => import('./pages/AdminPage'));
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -78,12 +80,19 @@ function LayoutRoute() {
 }
 
 export default function App() {
+  // First-party pageview tracking on every route change. The hook itself
+  // ignores ?owner= and /admin routes so the operator's own viewing doesn't
+  // pollute sponsor-facing numbers.
+  useAnalytics();
+
   return (
     <ErrorBoundary>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* TV view: no Layout (no banner, no footer) — chromeless full screen. */}
           <Route path="/r/:roomId/tv" element={<TvPage />} />
+          {/* Admin: no Layout, gated by ADMIN_TOKEN env var on the API. */}
+          <Route path="/admin" element={<AdminPage />} />
           {/* Everything else gets the standard Layout wrapper. */}
           <Route element={<LayoutRoute />}>
             <Route path="/" element={<LandingPage />} />

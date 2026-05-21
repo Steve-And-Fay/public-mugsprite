@@ -11,6 +11,7 @@ import { CastButton } from '../components/CastButton';
 import { PipButton } from '../components/PipButton';
 import { QrCode } from '../components/QrCode';
 import { useRoomStream } from '../lib/useRoomStream';
+import { useDashboardPings } from '../lib/useDashboardPings';
 
 const AUDIO_KEY = 'mugsprite:audio';
 
@@ -55,6 +56,11 @@ export default function RoomPage() {
   }, [audio]);
 
   const { state, acknowledgeSpeech } = useRoomStream(roomId);
+
+  // Dashboard dwell tracking — one ping per ~60s of visible tab time. Skips
+  // when the room operator is viewing their own room (?owner=) so engagement
+  // numbers shown to sponsors reflect actual visitors, not the operator.
+  useDashboardPings(roomId, isOwner);
 
   const refreshRoom = useCallback(() => {
     if (!roomId) return;

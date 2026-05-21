@@ -16,6 +16,14 @@
   path = "/api/stream/*"
   function = "stream"
 
+[[edge_functions]]
+  path = "/api/track/pageview"
+  function = "track-pageview"
+
+[[edge_functions]]
+  path = "/api/track/ping"
+  function = "track-ping"
+
 [[redirects]]
   from = "/mcp"
   to = "/.netlify/functions/mcp"
@@ -39,6 +47,11 @@
 [[redirects]]
   from = "/sponsor/click"
   to = "/.netlify/functions/sponsor/click"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/stats"
+  to = "/.netlify/functions/admin/stats"
   status = 200
 
 # Manual trigger for the scheduled cleanup function. Daily schedule is set

@@ -116,3 +116,82 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 );
 
 INSERT INTO schema_migrations (version) VALUES (1) ON CONFLICT DO NOTHING;
+
+-- v0.5 (migration 3): in-house analytics.
+--
+-- Privacy model: cookieless rolling-salt hash. The salt rotates every UTC
+-- day so visitor_hash cannot identify the same person across days. No raw
+-- IP, no raw user-agent stored anywhere.
+--
+-- Retention: raw pageviews and dashboard_pings are pruned after 90 days.
+-- Daily rollups are kept forever. Sponsor clicks are kept raw because
+-- volume is low and per-click attribution may be referenced by sponsors.
+CREATE TABLE IF NOT EXISTS analytics_salts (
+  day        DATE PRIMARY KEY,
+  salt       TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS analytics_pageviews (
+  id            BIGSERIAL PRIMARY KEY,
+  visitor_hash  TEXT NOT NULL,
+  path          TEXT NOT NULL,
+  referrer_host TEXT,
+  country       TEXT,
+  device_class  TEXT NOT NULL,
+  utm_source    TEXT,
+  utm_medium    TEXT,
+  utm_campaign  TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS analytics_pageviews_created_idx
+  ON analytics_pageviews(created_at DESC);
+CREATE INDEX IF NOT EXISTS analytics_pageviews_visitor_idx
+  ON analytics_pageviews(visitor_hash, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS analytics_dashboard_pings (
+  id            BIGSERIAL PRIMARY KEY,
+  visitor_hash  TEXT NOT NULL,
+  room_id       TEXT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS analytics_dashboard_pings_room_idx
+  ON analytics_dashboard_pings(room_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS analytics_dashboard_pings_created_idx
+  ON analytics_dashboard_pings(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS analytics_sponsor_clicks (
+  id            BIGSERIAL PRIMARY KEY,
+  visitor_hash  TEXT NOT NULL,
+  source_path   TEXT NOT NULL,
+  sponsor_slug  TEXT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS analytics_sponsor_clicks_sponsor_idx
+  ON analytics_sponsor_clicks(sponsor_slug, created_at DESC);
+
+-- Long-term rollup tables. The cleanup function aggregates yesterday's raw
+-- rows into these every night. Raw rows are then pruned past 90 days; these
+-- are the permanent record.
+CREATE TABLE IF NOT EXISTS analytics_pageviews_daily (
+  day              DATE NOT NULL,
+  path             TEXT NOT NULL,
+  country          TEXT,
+  device_class     TEXT NOT NULL,
+  pageviews        INTEGER NOT NULL,
+  unique_visitors  INTEGER NOT NULL,
+  PRIMARY KEY (day, path, country, device_class)
+);
+
+CREATE TABLE IF NOT EXISTS analytics_dashboard_daily (
+  day                  DATE PRIMARY KEY,
+  total_pings          INTEGER NOT NULL,
+  unique_visitors      INTEGER NOT NULL,
+  unique_rooms_viewed  INTEGER NOT NULL,
+  approx_view_seconds  BIGINT  NOT NULL
+);
+
+-- NOTE: version 2 (the agents bubble/progress columns) lives only on
+-- feature/richer-signals-timeline. Skipping straight to version 3 on main
+-- so the version sequence aligns when that branch is rebased.
+INSERT INTO schema_migrations (version) VALUES (3) ON CONFLICT DO NOTHING;
