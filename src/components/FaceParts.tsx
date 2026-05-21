@@ -1,12 +1,17 @@
 import type {
+  BeardFamily,
+  BodyShape,
   BrowFamily,
   BrowStyle,
   CheekFamily,
   EyeFamily,
   EyeStyle,
+  GlassesFamily,
+  HairFamily,
   MoodKey,
   MouthFamily,
   MouthStyle,
+  MustacheFamily,
 } from '@shared/moods';
 import { useFaceInk } from './faceInk';
 
@@ -1160,6 +1165,208 @@ function BoldBrows({ style }: { style: BrowStyle }) {
 // Cheeks: cosmetic decoration drawn over the personality-color background but
 // under the facial features. Family-dispatched so we can add freckles,
 // stripes, whiskers, etc. as new families later without changing callers.
+// Body shape clip-path values. Applied via CSS to the colored container div.
+// Returning an empty string means "no clip" — keeps the default rounded-square.
+// eslint-disable-next-line react-refresh/only-export-components
+export function bodyClipPathFor(shape: BodyShape): string {
+  switch (shape) {
+    case 'circle':
+      return 'circle(50% at 50% 50%)';
+    case 'heart':
+      return 'polygon(50% 92%, 6% 50%, 6% 20%, 28% 4%, 50% 22%, 72% 4%, 94% 20%, 94% 50%)';
+    case 'blob':
+      // Asymmetric organic blob — irregular but smooth-looking polygon.
+      return 'polygon(50% 0%, 78% 6%, 96% 30%, 100% 60%, 86% 86%, 60% 100%, 28% 96%, 6% 76%, 0% 46%, 14% 16%)';
+    case 'square':
+    default:
+      return '';
+  }
+}
+
+// Hair — drawn at the top of the face, above brows. Each family has a
+// silhouette in the linework color. Sits inside the SVG viewBox (1000x1000).
+export function Hair({ family }: { family: HairFamily }) {
+  const { ink } = useFaceInk();
+  switch (family) {
+    case 'spike':
+      // Single tuft sticking up from the top-center of the head.
+      return (
+        <path
+          d="M 460 140 L 480 30 L 510 110 L 540 20 L 560 120 L 580 60 L 600 160 Z"
+          fill={ink}
+        />
+      );
+    case 'mohawk':
+      // Tall central strip — punk silhouette.
+      return (
+        <path
+          d="M 450 180 L 480 -10 L 500 80 L 520 -20 L 540 70 L 560 -5 L 580 90 L 610 180 Z"
+          fill={ink}
+        />
+      );
+    case 'curls':
+      // Three round curl tufts across the top.
+      return (
+        <>
+          <circle cx={350} cy={140} r={55} fill={ink} />
+          <circle cx={500} cy={110} r={70} fill={ink} />
+          <circle cx={660} cy={140} r={55} fill={ink} />
+        </>
+      );
+    case 'none':
+    default:
+      return null;
+  }
+}
+
+// Glasses — drawn over the eyes (z above eye sclera + pupil). Frames are
+// hollow shapes so the eyes underneath remain visible. Built around the
+// fixed eye centers (320, 380) and (680, 380).
+export function Glasses({ family }: { family: GlassesFamily }) {
+  const { ink, paper } = useFaceInk();
+  switch (family) {
+    case 'sunglasses':
+      // Solid dark lenses + bridge + arms. Eyes are obscured behind, which
+      // reads as "cool" — that's the point.
+      return (
+        <g>
+          <rect
+            x={210}
+            y={310}
+            width={210}
+            height={140}
+            rx={26}
+            fill={ink}
+            stroke={ink}
+            strokeWidth={8}
+          />
+          <rect
+            x={580}
+            y={310}
+            width={210}
+            height={140}
+            rx={26}
+            fill={ink}
+            stroke={ink}
+            strokeWidth={8}
+          />
+          <line x1={420} y1={380} x2={580} y2={380} stroke={ink} strokeWidth={16} />
+          {/* Subtle reflective highlight on each lens */}
+          <line
+            x1={240}
+            y1={340}
+            x2={290}
+            y2={340}
+            stroke={paper}
+            strokeWidth={4}
+            opacity={0.75}
+          />
+          <line
+            x1={610}
+            y1={340}
+            x2={660}
+            y2={340}
+            stroke={paper}
+            strokeWidth={4}
+            opacity={0.75}
+          />
+        </g>
+      );
+    case 'round':
+      return (
+        <g fill="none" stroke={ink} strokeWidth={12}>
+          <circle cx={320} cy={380} r={100} />
+          <circle cx={680} cy={380} r={100} />
+          <line x1={420} y1={380} x2={580} y2={380} />
+        </g>
+      );
+    case 'square':
+      return (
+        <g fill="none" stroke={ink} strokeWidth={12}>
+          <rect x={210} y={290} width={220} height={180} rx={14} />
+          <rect x={570} y={290} width={220} height={180} rx={14} />
+          <line x1={430} y1={380} x2={570} y2={380} />
+        </g>
+      );
+    case 'none':
+    default:
+      return null;
+  }
+}
+
+// Mustache — drawn between the mouth and eyes. Inked silhouette shapes.
+export function Mustache({ family }: { family: MustacheFamily }) {
+  const { ink } = useFaceInk();
+  switch (family) {
+    case 'thin':
+      return (
+        <path
+          d="M 380 600 Q 500 615 620 600 Q 620 625 500 620 Q 380 625 380 600 Z"
+          fill={ink}
+        />
+      );
+    case 'thick':
+      // Chunky chevron mustache.
+      return (
+        <path
+          d="M 340 580 Q 400 560 500 590 Q 600 560 660 580 Q 660 640 500 625 Q 340 640 340 580 Z"
+          fill={ink}
+        />
+      );
+    case 'handlebar':
+      // Curled tips upward — classic handlebar.
+      return (
+        <path
+          d="M 290 600 Q 320 560 360 590 Q 430 615 500 600 Q 570 615 640 590 Q 680 560 710 600 Q 680 620 640 615 Q 570 630 500 620 Q 430 630 360 615 Q 320 620 290 600 Z"
+          fill={ink}
+        />
+      );
+    case 'none':
+    default:
+      return null;
+  }
+}
+
+// Beard — drawn around chin area, below the mouth. Inked silhouette.
+export function Beard({ family }: { family: BeardFamily }) {
+  const { ink } = useFaceInk();
+  switch (family) {
+    case 'goatee':
+      // Pointed chin tuft below the mouth.
+      return (
+        <path
+          d="M 460 820 Q 500 810 540 820 Q 530 900 500 940 Q 470 900 460 820 Z"
+          fill={ink}
+        />
+      );
+    case 'full':
+      // Full chin-wrapping beard. Drawn under the mouth area so the mouth
+      // shape remains the visual focus.
+      return (
+        <path
+          d="M 250 770 Q 300 760 360 800 Q 420 820 500 825 Q 580 820 640 800 Q 700 760 750 770 Q 760 860 700 920 Q 600 970 500 970 Q 400 970 300 920 Q 240 860 250 770 Z"
+          fill={ink}
+        />
+      );
+    case 'stubble':
+      // Scattered dots reading as 5-o'clock shadow.
+      return (
+        <g fill={ink}>
+          {Array.from({ length: 32 }).map((_, i) => {
+            // Pseudo-random positions, seeded by i for stability.
+            const x = 280 + ((i * 37) % 440);
+            const y = 820 + ((i * 53) % 110);
+            const r = 4 + ((i * 7) % 5);
+            return <circle key={i} cx={x} cy={y} r={r} opacity={0.6} />;
+          })}
+        </g>
+      );
+    case 'none':
+    default:
+      return null;
+  }
+}
+
 export function Cheeks({ family }: { family: CheekFamily }) {
   if (family === 'blush') {
     // Bolder, slightly larger rosy ovals — match reference cuteness factor.

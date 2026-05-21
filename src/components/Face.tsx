@@ -7,7 +7,18 @@ import {
   type MoodKey,
   type MouthStyle,
 } from '@shared/moods';
-import { Accessories, Brows, Cheeks, Eye, Teeth } from './FaceParts';
+import {
+  Accessories,
+  Beard,
+  bodyClipPathFor,
+  Brows,
+  Cheeks,
+  Eye,
+  Glasses,
+  Hair,
+  Mustache,
+  Teeth,
+} from './FaceParts';
 import { FaceInkContext, type FaceInk } from './faceInk';
 import { mouthPathFor, tonguePath } from './mouthPaths';
 
@@ -262,7 +273,10 @@ function FaceImpl({
     >
       <div
         className="group relative aspect-square w-full rounded-[22px] overflow-hidden border-[3px] border-ink shadow-brutal-lg select-none"
-        style={{ backgroundColor: color }}
+        style={{
+          backgroundColor: color,
+          clipPath: bodyClipPathFor(resolved.bodyShape) || undefined,
+        }}
       >
         {/* Top sheen — subtle white gradient for depth */}
         <div
@@ -363,6 +377,9 @@ function FaceImpl({
                 role="img"
                 aria-label={`${name} agent — ${moodDef.label}`}
               >
+                <g className="hair" aria-hidden>
+                  <Hair family={resolved.hairFamily} />
+                </g>
                 <g className="accessories">
                   <Accessories mood={mood} />
                 </g>
@@ -401,6 +418,12 @@ function FaceImpl({
                     cy={380}
                     isLeft={false}
                   />
+                </g>
+                <g className="glasses" aria-hidden>
+                  <Glasses family={resolved.glassesFamily} />
+                </g>
+                <g className="mustache" aria-hidden>
+                  <Mustache family={resolved.mustacheFamily} />
                 </g>
                 <g
                   className="mouthGroup"
@@ -443,6 +466,9 @@ function FaceImpl({
                     strokeWidth={5}
                     d={tonguePath(resolved.mouthFamily, effectiveMouth)}
                   />
+                </g>
+                <g className="beard" aria-hidden>
+                  <Beard family={resolved.beardFamily} />
                 </g>
               </svg>
             </div>
