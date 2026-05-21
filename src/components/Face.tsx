@@ -278,21 +278,30 @@ function FaceImpl({
             : ''
         }`}
         style={{
-          // Embed the top-sheen + bottom-shadow gradient INTO the background
-          // itself instead of stacking inset overlay divs. Overlay divs are
+          // Bake the top-sheen + bottom-shadow gradient INTO the background
+          // itself instead of stacking inset overlay divs. Inset divs are
           // positioned against the rectangular bounds, so when clip-path
           // crops the visible area (heart/circle/blob), the gradient ends up
           // mostly outside the visible shape. A background gradient is part
           // of the surface being clipped and naturally follows the shape.
-          background: `linear-gradient(to bottom, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 33%, rgba(0,0,0,0) 72%, rgba(0,0,0,0.14) 100%), ${color}`,
+          //
+          // Alphas are stronger here than the original square so the depth
+          // still reads on non-square shapes that have no border/box-shadow
+          // to anchor the eye. The square also benefits — slightly more
+          // dimensional than before, still in the same brutalist key.
+          backgroundColor: color,
+          backgroundImage:
+            'linear-gradient(to bottom, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.28) 100%)',
           clipPath: bodyClipPathFor(resolved.bodyShape) || undefined,
           // Box-shadow gets clipped by clip-path; switch to a drop-shadow
           // filter for non-square shapes so the chunky brutal shadow follows
           // the actual silhouette (heart point, blob curves, circle edge).
+          // The 0-blur 1px shadows around the silhouette mimic the 3px ink
+          // border that the square keeps via CSS.
           filter:
             resolved.bodyShape === 'square'
               ? undefined
-              : 'drop-shadow(6px 6px 0 rgba(26,26,26,1)) drop-shadow(0 0 0 #1a1a1a)',
+              : 'drop-shadow(6px 6px 0 #1a1a1a) drop-shadow(0 -1px 0 #1a1a1a) drop-shadow(0 1px 0 #1a1a1a) drop-shadow(-1px 0 0 #1a1a1a) drop-shadow(1px 0 0 #1a1a1a)',
         }}
       >
 
