@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { generateUuid } from '../../src/shared/ids';
 import { AgentNameSchema, HexColorSchema } from '../../src/shared/types';
+import { AgentTraitsSchema } from '../../src/shared/moods';
 import { authenticateRoomOwner } from './_lib/auth';
 import {
   appendEvent,
@@ -9,8 +10,10 @@ import {
   getAgent,
   getRoomWithToken,
   touchRoom,
+  updateAgentTraits,
 } from './_lib/db';
 import {
+  badRequest,
   created,
   forbidden,
   methodNotAllowed,
@@ -28,6 +31,11 @@ const CreateAgentBody = z.object({
   color: HexColorSchema,
 });
 
+// `null` clears the customization; the renderer falls back to the built-in face.
+const UpdateAgentBody = z.object({
+  traits: AgentTraitsSchema.nullable(),
+});
+
 export default async (req: Request): Promise<Response> => {
   try {
     const url = new URL(req.url);
@@ -43,7 +51,8 @@ export default async (req: Request): Promise<Response> => {
       const agentId = segments[0]!;
       if (req.method === 'DELETE') return handleDelete(agentId, req);
       if (req.method === 'GET') return handleGet(agentId, req);
-      return methodNotAllowed(['GET', 'DELETE']);
+      if (req.method === 'PATCH') return handlePatch(agentId, req);
+      return methodNotAllowed(['GET', 'PATCH', 'DELETE']);
     }
 
     return notFound();
@@ -97,6 +106,31 @@ async function handleGet(agentId: string, req: Request): Promise<Response> {
     agent,
     agentJoinToken: roomWithToken?.agentJoinToken ?? '',
   });
+}
+
+async function handlePatch(agentId: string, req: Request): Promise<Response> {
+  const agent = await getAgent(agentId);
+  if (!agent) return notFound('agent not found');
+
+  const ownerToken = parseBearer(req);
+  const room = await authenticateRoomOwner(agent.roomId, ownerToken);
+  if (!room) return forbidden('owner token required');
+
+  const parsed = await readJson(req, UpdateAgentBody);
+  if (parsed instanceof Response) return parsed;
+
+  const updated = await updateAgentTraits(agentId, parsed.traits);
+  if (!updated) return badRequest('failed to update agent');
+
+  await appendEvent({
+    roomId: agent.roomId,
+    agentId: agent.id,
+    kind: 'traits',
+    payload: { traits: parsed.traits },
+  });
+  await touchRoom(agent.roomId);
+
+  return ok({ agent: updated });
 }
 
 async function handleDelete(agentId: string, req: Request): Promise<Response> {

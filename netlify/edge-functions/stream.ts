@@ -23,6 +23,9 @@ interface AgentRow {
   last_message: string | null;
   created_at: string;
   updated_at: string;
+  // JSONB. Forwarded verbatim to clients; the client-side schema validator
+  // narrows any unexpected shape back to null.
+  traits: unknown;
 }
 
 interface EventRow {
@@ -95,6 +98,7 @@ export default async (req: Request): Promise<Response> => {
           lastMessage: a.last_message,
           createdAt: a.created_at,
           updatedAt: a.updated_at,
+          traits: a.traits ?? null,
         })),
         lastEventId,
       });

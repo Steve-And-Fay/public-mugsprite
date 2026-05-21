@@ -144,6 +144,7 @@ function computeStateAt(elapsed: number): DemoState {
       lastMessage: null,
       createdAt: now,
       updatedAt: now,
+      traits: null,
     };
   }
   return { agents };

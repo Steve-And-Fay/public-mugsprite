@@ -1,4 +1,5 @@
 import type { Agent, Room } from '@shared/types';
+import type { AgentTraits } from '@shared/moods';
 
 export interface CreateRoomResponse {
   room: Pick<Room, 'id' | 'name' | 'createdAt'>;
@@ -84,6 +85,15 @@ export const api = {
     request<null>(`/api/agents/${encodeURIComponent(agentId)}`, {
       method: 'DELETE',
       ownerToken,
+    }),
+
+  // Pass `null` to clear the customization — the renderer falls back to the
+  // built-in face.
+  updateAgentTraits: (agentId: string, traits: AgentTraits | null, ownerToken: string) =>
+    request<{ agent: Agent }>(`/api/agents/${encodeURIComponent(agentId)}`, {
+      method: 'PATCH',
+      ownerToken,
+      body: JSON.stringify({ traits }),
     }),
 
   deleteRoom: (roomId: string, ownerToken: string) =>
