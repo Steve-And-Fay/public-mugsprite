@@ -6,6 +6,8 @@
 
 ## Goals
 
+- **Works out of the box.** Every newly registered agent renders a complete, animated, expressive face immediately — no setup, no builder visit required. The built-in `Face` stays the default and remains a fully viable choice forever.
+- **Customization is self-discoverable per agent.** Owners find the "Customize" affordance directly on each agent tile in the grid, not buried in a side panel.
 - Give owners a low-friction way to make every agent look distinct without authoring 12 animations themselves.
 - Guarantee cohesion: changing a trait propagates across all 12 moods automatically.
 - Ship inside one focused branch in roughly five working days.
@@ -115,8 +117,9 @@ src/
   shared/
     moods.ts                       (modified — add MOOD_DELTAS + AgentTraits type + Zod schema)
   components/
-    Face.tsx                       (modified — consume traits)
-    OwnerPanel.tsx                 (modified — new "Customize" link per agent row)
+    Face.tsx                       (modified — consume traits, render hover-revealed "Customize" button when viewer is owner)
+    AgentGrid.tsx                  (modified — pass owner-detection signal down to tiles)
+    OwnerPanel.tsx                 (modified — secondary "Customize" link per agent row)
     MugBuilder.tsx                 (new — the builder UI)
     MugBuilder.preview.tsx         (new — 12-mood preview grid)
   pages/
@@ -204,9 +207,22 @@ Adds one optional field to the existing agent payload pushed over SSE:
 
 Older dashboard clients that don't know about `traits` simply ignore the unknown field — no breaking change.
 
-## OwnerPanel integration
+## Discoverability — the "Customize" affordance
 
-Each agent row in the existing OwnerPanel gets a small "Customize" link beside the existing delete/rename controls. Clicking sets the `?builder=<agent_id>` query param. The Room page reads the param and mounts `MugBuilder` as an overlay above the grid.
+This is a first-class UX concern. We do **not** want the only path to the builder to be "open OwnerPanel, find the agent row, click a small link." Owners should see the affordance directly on the agent tile they want to change.
+
+**Primary surface — per-agent hover button on the grid tile.** Each `Face` tile in the dashboard grid gets a small "Customize" button that appears on hover/focus, using the same hover pattern already established by the `onDismiss` × button in `Face.tsx`. The button:
+
+- Renders only when an owner token is present in the URL (or otherwise available client-side). Read-only viewers never see it.
+- Sits at the top-right of the tile, opposite the existing × dismiss. A small pencil or paintbrush glyph + the word "Customize" on wider tiles, glyph-only on narrow ones.
+- On click, sets `?builder=<agent_id>` — same URL contract as the OwnerPanel entry point. The MugBuilder modal opens immediately.
+- Uses the same neo-brutalist chip styling already used for the mood label and × button (paper background, ink border, brutal shadow) so it feels native to the existing chrome.
+
+**Secondary surface — OwnerPanel agent rows.** The OwnerPanel agent list also gets a "Customize" link beside the existing delete/rename controls, for owners managing many agents in bulk. Same `?builder=<agent_id>` route. This is the secondary path, not the primary.
+
+**First-time hint (optional, low-cost).** For an agent that has never been customized (`traits IS NULL`), the per-tile button can show a subtle "Customize" badge instead of staying hidden until hover, for the first ~10 seconds after the agent registers. After that it reverts to hover-only so the grid stays clean. Decide during implementation whether the hint is worth the complexity; if it bloats the component, skip it — hover-reveal alone is sufficient for v1.
+
+**Owner detection.** "Is the current viewer an owner?" is the gate for showing the button. v1 reuses whatever owner-token detection the existing OwnerPanel already uses — no new auth code. If that signal isn't already exposed at the Face tile level, route it down via context or props as part of this branch.
 
 ## Validation rules
 
@@ -270,4 +286,8 @@ None blocking. The earlier "should agents be able to set their own traits via MC
 
 ## Definition of Done
 
-A room owner can: open OwnerPanel → click "Customize" on an agent → pick base eyes from 11 options → pick base mouth from 8 options → pick any hex color → see all 12 moods animate live in the preview grid → click Save → the change propagates over SSE to every dashboard viewer of the room. Reload the room and the customization persists. Click Reset and the agent renders the original built-in face. `npm run verify` is clean.
+1. **Out-of-the-box:** registering a new agent (via MCP or the OwnerPanel "Add agent" flow) instantly renders the full built-in face with all 12 moods, identical to current behavior. No builder visit required.
+2. **Self-discovery:** an owner viewing the room sees a hover-revealed "Customize" button on every agent tile in the grid. A non-owner viewer sees no such button.
+3. A room owner can: hover any agent tile → click "Customize" → pick base eyes from 11 options → pick base mouth from 8 options → pick any hex color → see all 12 moods animate live in the preview grid → click Save → the change propagates over SSE to every dashboard viewer of the room.
+4. Reload the room and the customization persists. Click Reset and the agent renders the original built-in face again.
+5. `npm run verify` is clean.
