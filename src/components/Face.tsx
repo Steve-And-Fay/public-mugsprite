@@ -272,26 +272,29 @@ function FaceImpl({
       style={{ transform: `scale(${shrinkScale.toFixed(3)})` }}
     >
       <div
-        className="group relative aspect-square w-full rounded-[22px] overflow-hidden border-[3px] border-ink shadow-brutal-lg select-none"
+        className={`group relative aspect-square w-full overflow-hidden select-none ${
+          resolved.bodyShape === 'square'
+            ? 'rounded-[22px] border-[3px] border-ink shadow-brutal-lg'
+            : ''
+        }`}
         style={{
-          backgroundColor: color,
+          // Embed the top-sheen + bottom-shadow gradient INTO the background
+          // itself instead of stacking inset overlay divs. Overlay divs are
+          // positioned against the rectangular bounds, so when clip-path
+          // crops the visible area (heart/circle/blob), the gradient ends up
+          // mostly outside the visible shape. A background gradient is part
+          // of the surface being clipped and naturally follows the shape.
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 33%, rgba(0,0,0,0) 72%, rgba(0,0,0,0.14) 100%), ${color}`,
           clipPath: bodyClipPathFor(resolved.bodyShape) || undefined,
+          // Box-shadow gets clipped by clip-path; switch to a drop-shadow
+          // filter for non-square shapes so the chunky brutal shadow follows
+          // the actual silhouette (heart point, blob curves, circle edge).
+          filter:
+            resolved.bodyShape === 'square'
+              ? undefined
+              : 'drop-shadow(6px 6px 0 rgba(26,26,26,1)) drop-shadow(0 0 0 #1a1a1a)',
         }}
       >
-        {/* Top sheen — subtle white gradient for depth */}
-        <div
-          className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
-          style={{
-            background: 'linear-gradient(to bottom, rgba(255,255,255,0.18), transparent)',
-          }}
-        />
-        {/* Bottom shadow — anchors the face */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-1/4 pointer-events-none"
-          style={{
-            background: 'linear-gradient(to top, rgba(0,0,0,0.12), transparent)',
-          }}
-        />
 
         {!compact && (
           <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[9px] sm:text-[10px] tracking-widest shadow-brutal-sm z-10">
