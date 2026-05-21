@@ -238,7 +238,9 @@ export function PrivacyPage() {
         </ul>
         <p>
           Clicks are counted in aggregate and reported to the sponsor monthly. No cookies, no
-          fingerprinting, no cross-site tracking.
+          fingerprinting, no cross-site tracking. The same rotating-salt visitor hash described
+          in Section 5 is also recorded alongside each click so a single visit that bounces
+          through several pages before clicking shows up as one person within the day.
         </p>
       </Section>
       <Section heading="5. Anonymous Site Analytics">
@@ -253,7 +255,7 @@ export function PrivacyPage() {
           <li>The referring site's hostname (path and query are discarded).</li>
           <li>Your country, derived from the IP address at request time and never stored
             with your visit.</li>
-          <li>A device class (mobile / desktop) derived from the user-agent string.</li>
+          <li>A device class (mobile, desktop, or "other") derived from the user-agent string.</li>
           <li>UTM parameters if present in the URL.</li>
           <li>An opaque visitor hash computed from your IP and user-agent combined with a
             cryptographic salt that rotates every 24 hours. Raw IP and user-agent are

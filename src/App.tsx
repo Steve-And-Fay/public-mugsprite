@@ -91,8 +91,6 @@ export default function App() {
         <Routes>
           {/* TV view: no Layout (no banner, no footer) — chromeless full screen. */}
           <Route path="/r/:roomId/tv" element={<TvPage />} />
-          {/* Admin: no Layout, gated by ADMIN_TOKEN env var on the API. */}
-          <Route path="/admin" element={<AdminPage />} />
           {/* Everything else gets the standard Layout wrapper. */}
           <Route element={<LayoutRoute />}>
             <Route path="/" element={<LandingPage />} />
@@ -101,6 +99,9 @@ export default function App() {
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/sponsor" element={<SponsorPage />} />
             <Route path="/faq" element={<FaqPage />} />
+            {/* Admin: gated by ADMIN_TOKEN env var on the API. Wrapped in Layout
+                so the operator sees the same chrome as the rest of the site. */}
+            <Route path="/admin" element={<AdminPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

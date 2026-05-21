@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
+import { UserMenuProvider } from './components/UserMenu';
 import { printConsoleBanner } from './lib/consoleBanner';
 import './index.css';
 
@@ -13,7 +14,9 @@ createRoot(root).render(
   <StrictMode>
     <HelmetProvider>
       <BrowserRouter>
-        <App />
+        <UserMenuProvider>
+          <App />
+        </UserMenuProvider>
       </BrowserRouter>
     </HelmetProvider>
   </StrictMode>,

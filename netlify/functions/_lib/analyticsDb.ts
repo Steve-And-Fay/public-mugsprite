@@ -343,6 +343,59 @@ export async function getProductActivityStats(): Promise<ProductActivityStats> {
   };
 }
 
+// Time-series for the admin dashboard charts. Pulls from the daily rollups so
+// the query is bounded at ~30 rows regardless of underlying traffic — Neon
+// compute is negligible. `days` capped at 90 to match the raw-row retention.
+export interface DailyTrend {
+  pageviews: Array<{ day: string; pageviews: number; unique_visitors: number }>;
+  dwellSeconds: Array<{ day: string; approx_view_seconds: number; unique_visitors: number }>;
+  roomsCreated: Array<{ day: string; rooms: number }>;
+}
+
+export async function getDailyTrend(days = 30): Promise<DailyTrend> {
+  const cappedDays = Math.min(Math.max(days, 7), 90);
+
+  // Pageviews: sum across path/country/device for each day.
+  const pageviews = (await sql`
+    SELECT day::text AS day,
+      COALESCE(SUM(pageviews), 0)::int AS pageviews,
+      COALESCE(SUM(unique_visitors), 0)::int AS unique_visitors
+    FROM analytics_pageviews_daily
+    WHERE day >= CURRENT_DATE - (${cappedDays} || ' days')::interval
+    GROUP BY day
+    ORDER BY day ASC
+  `) as Array<{ day: string; pageviews: number; unique_visitors: number }>;
+
+  const dwellSeconds = (await sql`
+    SELECT day::text AS day, approx_view_seconds::bigint AS approx_view_seconds,
+      unique_visitors
+    FROM analytics_dashboard_daily
+    WHERE day >= CURRENT_DATE - (${cappedDays} || ' days')::interval
+    ORDER BY day ASC
+  `) as Array<{ day: string; approx_view_seconds: number | string; unique_visitors: number }>;
+
+  // Rooms created per day — derived from the existing rooms table; no rollup
+  // needed since rooms are inherently low-volume.
+  const roomsCreated = (await sql`
+    SELECT (created_at AT TIME ZONE 'UTC')::date::text AS day,
+      COUNT(*)::int AS rooms
+    FROM rooms
+    WHERE created_at >= NOW() - (${cappedDays} || ' days')::interval
+    GROUP BY 1
+    ORDER BY 1 ASC
+  `) as Array<{ day: string; rooms: number }>;
+
+  return {
+    pageviews,
+    dwellSeconds: dwellSeconds.map((r) => ({
+      day: r.day,
+      approx_view_seconds: Number(r.approx_view_seconds),
+      unique_visitors: r.unique_visitors,
+    })),
+    roomsCreated,
+  };
+}
+
 export interface SponsorClickStats {
   clicks7d: number;
   clicks30d: number;

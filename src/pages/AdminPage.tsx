@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useUserMenu } from '../lib/useUserMenu';
+import type { UserMenuItem } from '../components/UserMenuContext';
 
 // Owner-only analytics dashboard. Lives at /admin?token=<ADMIN_TOKEN>.
 // All data comes from a single /api/admin/stats call. Charts are intentionally
@@ -55,12 +57,20 @@ interface SponsorSection {
   error?: string;
 }
 
+interface TrendSection {
+  pageviews?: Array<{ day: string; pageviews: number; unique_visitors: number }>;
+  dwellSeconds?: Array<{ day: string; approx_view_seconds: number; unique_visitors: number }>;
+  roomsCreated?: Array<{ day: string; rooms: number }>;
+  error?: string;
+}
+
 interface StatsResponse {
   generatedAt: string;
   traffic: TrafficSection;
   engagement: EngagementSection;
   product: ProductSection;
   sponsor: SponsorSection;
+  trend: TrendSection;
 }
 
 export default function AdminPage() {
@@ -69,6 +79,29 @@ export default function AdminPage() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+
+  // Admin hamburger menu — registered via context so it appears in the top
+  // chrome alongside the BETA banner. Items are admin-specific actions; the
+  // same pattern will eventually carry room-owner actions on RoomPage.
+  const menuItems = useMemo<UserMenuItem[]>(
+    () => [
+      { label: 'REFRESH', onClick: () => setRefreshNonce((n) => n + 1) },
+      { label: 'TRIGGER CLEANUP NOW', href: '/__cleanup', external: true },
+      { label: 'OPEN MUGSPRITE.COM', href: '/', external: false },
+      {
+        label: 'SIGN OUT',
+        variant: 'danger',
+        onClick: () => {
+          // Strip the token from the URL and reload so the admin guard
+          // (missing ?token) bounces the user back to the empty state.
+          window.location.assign('/admin');
+        },
+      },
+    ],
+    [],
+  );
+  useUserMenu(menuItems);
 
   useEffect(() => {
     if (!token) {
@@ -102,11 +135,25 @@ export default function AdminPage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, refreshNonce]);
+
+  // Refresh-on-focus: when the operator returns to the admin tab, fetch fresh
+  // numbers. No setInterval, no polling — the page is idle whenever it's not
+  // in front of you. Cheap and matches how operators actually use a dashboard.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        setRefreshNonce((n) => n + 1);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 
   return (
-    <main className="min-h-screen bg-paper text-ink p-6 lg:p-10">
-      <header className="mb-8 flex items-baseline justify-between">
+    <div className="flex-1 max-w-[1600px] mx-auto w-full p-6 lg:p-10">
+      <header className="mb-8 flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="font-display text-3xl tracking-widest">MUGSPRITE / ADMIN</h1>
         {stats && (
           <p className="text-xs opacity-60">
@@ -125,13 +172,63 @@ export default function AdminPage() {
 
       {stats && (
         <div className="grid gap-8 lg:grid-cols-2">
-          <TrafficCard data={stats.traffic} />
-          <EngagementCard data={stats.engagement} />
-          <ProductCard data={stats.product} />
+          <TrafficCard data={stats.traffic} trend={stats.trend} />
+          <EngagementCard data={stats.engagement} trend={stats.trend} />
+          <ProductCard data={stats.product} trend={stats.trend} />
           <SponsorCard data={stats.sponsor} />
         </div>
       )}
-    </main>
+    </div>
+  );
+}
+
+// Pure-SVG bar chart for daily trends. Cheap to render (no chart lib, no
+// runtime cost beyond the rows themselves). Renders nothing if there are no
+// non-zero rows so a fresh deploy with empty rollups doesn't show ghost axes.
+function BarChart({
+  data,
+  height = 80,
+  label,
+}: {
+  data: Array<{ day: string; value: number }>;
+  height?: number;
+  label?: string;
+}) {
+  if (!data || data.length === 0) {
+    return <p className="text-xs opacity-60">No daily data yet — rolls up nightly.</p>;
+  }
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const barWidth = 100 / data.length;
+  return (
+    <div>
+      {label && (
+        <div className="flex justify-between items-baseline mb-1 text-[10px] opacity-60 uppercase tracking-wider">
+          <span>{label}</span>
+          <span>peak {max.toLocaleString()}</span>
+        </div>
+      )}
+      <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="w-full" style={{ height }}>
+        {data.map((d, i) => {
+          const h = (d.value / max) * (height - 2);
+          return (
+            <rect
+              key={d.day}
+              x={i * barWidth + barWidth * 0.1}
+              y={height - h}
+              width={barWidth * 0.8}
+              height={Math.max(h, d.value > 0 ? 1 : 0)}
+              fill="currentColor"
+            >
+              <title>{`${d.day}: ${d.value.toLocaleString()}`}</title>
+            </rect>
+          );
+        })}
+      </svg>
+      <div className="flex justify-between text-[10px] opacity-60 mt-1">
+        <span>{data[0]?.day}</span>
+        <span>{data[data.length - 1]?.day}</span>
+      </div>
+    </div>
   );
 }
 
@@ -180,7 +277,9 @@ function TopList({ rows }: { rows: TopRow[] }) {
   );
 }
 
-function TrafficCard({ data }: { data: TrafficSection }) {
+function TrafficCard({ data, trend }: { data: TrafficSection; trend: TrendSection }) {
+  const pvBars = (trend.pageviews ?? []).map((d) => ({ day: d.day, value: d.pageviews }));
+  const uvBars = (trend.pageviews ?? []).map((d) => ({ day: d.day, value: d.unique_visitors }));
   return (
     <CardShell title="TRAFFIC" error={data.error}>
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -189,6 +288,10 @@ function TrafficCard({ data }: { data: TrafficSection }) {
         <BigStat label="30d pageviews" value={data.pageviews30d ?? 0} />
         <BigStat label="7d uniques" value={data.uniqueVisitors7d ?? 0} />
         <BigStat label="30d uniques" value={data.uniqueVisitors30d ?? 0} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <BarChart data={pvBars} label="PAGEVIEWS / DAY (30d)" />
+        <BarChart data={uvBars} label="UNIQUE VISITORS / DAY (30d)" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -238,7 +341,11 @@ function TrafficCard({ data }: { data: TrafficSection }) {
   );
 }
 
-function EngagementCard({ data }: { data: EngagementSection }) {
+function EngagementCard({ data, trend }: { data: EngagementSection; trend: TrendSection }) {
+  const dwellBars = (trend.dwellSeconds ?? []).map((d) => ({
+    day: d.day,
+    value: Math.round(d.approx_view_seconds / 60),
+  }));
   const dwellMin =
     data.avgDwellSecondsPerVisitor7d !== undefined
       ? (data.avgDwellSecondsPerVisitor7d / 60).toFixed(1) + ' min'
@@ -251,6 +358,9 @@ function EngagementCard({ data }: { data: EngagementSection }) {
         <BigStat label="Avg dwell / visitor (7d)" value={dwellMin} />
         <BigStat label="Rooms viewed (7d)" value={data.topViewedRoomsCount ?? 0} />
       </div>
+      <div className="mt-4">
+        <BarChart data={dwellBars} label="TOTAL DASHBOARD MINUTES / DAY (30d)" />
+      </div>
       <p className="text-xs opacity-60 mt-4">
         Each ping ≈ 60s of visible attention. Owner-side views are excluded.
       </p>
@@ -258,7 +368,8 @@ function EngagementCard({ data }: { data: EngagementSection }) {
   );
 }
 
-function ProductCard({ data }: { data: ProductSection }) {
+function ProductCard({ data, trend }: { data: ProductSection; trend: TrendSection }) {
+  const roomBars = (trend.roomsCreated ?? []).map((d) => ({ day: d.day, value: d.rooms }));
   return (
     <CardShell title="PRODUCT ACTIVITY" error={data.error}>
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -267,6 +378,9 @@ function ProductCard({ data }: { data: ProductSection }) {
         <BigStat label="Rooms 30d" value={data.roomsCreated30d ?? 0} />
         <BigStat label="Agents 7d" value={data.agentsAdded7d ?? 0} />
         <BigStat label="Active rooms (24h)" value={data.activeRoomsNow ?? 0} />
+      </div>
+      <div className="mb-6">
+        <BarChart data={roomBars} label="ROOMS CREATED / DAY (30d)" />
       </div>
       <h3 className="font-display text-xs tracking-widest mb-2 opacity-70">MCP CALLS BY KIND (7d)</h3>
       <TopList

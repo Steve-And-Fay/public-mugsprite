@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ObfuscatedEmail } from './ObfuscatedEmail';
 import { SponsorBadge } from './SponsorBadge';
+import { UserMenuHamburger } from './UserMenu';
 import { isPaidSlot, SLOTS, sponsorPageLink } from '../lib/sponsor';
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -23,18 +24,27 @@ function BetaBanner() {
   return (
     <div
       role="alert"
-      className="bg-accent-yellow border-b-[3px] border-ink px-4 py-1.5 text-center font-display text-[10px] sm:text-xs tracking-widest"
+      className="bg-accent-yellow border-b-[3px] border-ink px-4 py-1.5 font-display text-[10px] sm:text-xs tracking-widest flex items-center justify-center gap-3"
     >
-      <span className="inline-block bg-ink text-paper rounded px-2 py-0.5 mr-2">BETA</span>
-      EXPERIMENTAL · PROVIDED AS-IS · NO UPTIME GUARANTEE ·{' '}
-      <a
-        href="https://github.com/Steve-And-Fay/public-mugsprite/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline hover:no-underline"
-      >
-        SOURCE
-      </a>
+      <div className="flex-1" />
+      <div className="text-center">
+        <span className="inline-block bg-ink text-paper rounded px-2 py-0.5 mr-2">BETA</span>
+        EXPERIMENTAL · PROVIDED AS-IS · NO UPTIME GUARANTEE ·{' '}
+        <a
+          href="https://github.com/Steve-And-Fay/public-mugsprite/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:no-underline"
+        >
+          SOURCE
+        </a>
+      </div>
+      {/* The hamburger renders only when a page has registered menu items via
+          useUserMenu (see src/components/UserMenu.tsx). The flex-1 spacer on
+          the left keeps the banner text centered when the menu is absent. */}
+      <div className="flex-1 flex justify-end">
+        <UserMenuHamburger />
+      </div>
     </div>
   );
 }

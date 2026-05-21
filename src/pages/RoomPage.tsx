@@ -62,6 +62,13 @@ export default function RoomPage() {
   // numbers shown to sponsors reflect actual visitors, not the operator.
   useDashboardPings(roomId, isOwner);
 
+  // FUTURE — room-owner hamburger menu. When the owner needs in-place actions
+  // like "Change sprite", "Rename room", "Rotate agent join token",
+  // "Export room JSON", "Delete room", call useUserMenu(items) here gated on
+  // isOwner. The shared UserMenu component (src/components/UserMenu.tsx) is
+  // already wired into the Layout — pages just register items via the hook.
+  // Intentionally left empty for v1 so the public room page stays uncluttered.
+
   const refreshRoom = useCallback(() => {
     if (!roomId) return;
     api

@@ -1,4 +1,5 @@
 import {
+  getDailyTrend,
   getDashboardEngagementStats,
   getProductActivityStats,
   getSponsorClickStats,
@@ -35,13 +36,14 @@ export default async (req: Request): Promise<Response> => {
     return unauthorized('invalid admin token');
   }
 
-  // Run all four section queries in parallel. Promise.allSettled so one
-  // failed section doesn't block the others.
-  const [traffic, engagement, product, sponsor] = await Promise.allSettled([
+  // Run all section queries in parallel. Promise.allSettled so one failed
+  // section doesn't block the others.
+  const [traffic, engagement, product, sponsor, trend] = await Promise.allSettled([
     getTrafficStats(),
     getDashboardEngagementStats(),
     getProductActivityStats(),
     getSponsorClickStats(),
+    getDailyTrend(30),
   ]);
 
   const sectionOrError = <T,>(s: PromiseSettledResult<T>) =>
@@ -53,5 +55,6 @@ export default async (req: Request): Promise<Response> => {
     engagement: sectionOrError(engagement),
     product: sectionOrError(product),
     sponsor: sectionOrError(sponsor),
+    trend: sectionOrError(trend),
   });
 };
