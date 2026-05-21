@@ -496,7 +496,7 @@ function PixelEye({ style, cx, cy, isLeft }: FamilyEyeProps) {
 // stroked ellipses and arcs so the family reads as confident and graphic.
 function ToonEye({ style, cx, cy, isLeft }: FamilyEyeProps) {
   const { ink, paper, isDark } = useFaceInk();
-  const STROKE = 18;
+  const STROKE = 26;
   const haloOpacity = isDark ? 0.22 : 0.08;
 
   switch (style) {
@@ -755,33 +755,38 @@ function ToonEye({ style, cx, cy, isLeft }: FamilyEyeProps) {
       );
     case 'normal':
     default:
-      // Default: big almond with a strong outline + offset pupil + catchlight.
+      // Default Toon eye: big almond, heavy black outline, LARGE pupil
+      // filling most of the sclera, plus a chunky upper-right catchlight +
+      // smaller secondary highlight. Reference-faithful proportions.
       return (
         <>
           <ellipse
             cx={cx}
             cy={cy}
-            rx={72}
-            ry={92}
+            rx={78}
+            ry={96}
             fill={paper}
             stroke={ink}
-            strokeWidth={STROKE / 1.5}
+            strokeWidth={STROKE}
           />
-          <ellipse cx={cx + 12} cy={cy - 18} rx={28} ry={36} fill={ink}>
+          <ellipse cx={cx + 6} cy={cy - 4} rx={48} ry={62} fill={ink}>
             <animate
               attributeName="cx"
-              values={`${cx + 12};${cx - 6};${cx + 14};${cx + 12}`}
+              values={`${cx + 6};${cx - 6};${cx + 8};${cx + 6}`}
               dur="6s"
               repeatCount="indefinite"
             />
             <animate
               attributeName="cy"
-              values={`${cy - 18};${cy - 26};${cy - 12};${cy - 18}`}
+              values={`${cy - 4};${cy - 12};${cy + 2};${cy - 4}`}
               dur="6s"
               repeatCount="indefinite"
             />
           </ellipse>
-          <ellipse cx={cx + 22} cy={cy - 28} rx={9} ry={12} fill={paper} opacity={0.9} />
+          {/* Primary catchlight — top-right, big and bright */}
+          <ellipse cx={cx + 22} cy={cy - 28} rx={14} ry={18} fill={paper} />
+          {/* Secondary smaller highlight — bottom-left, anime-style */}
+          <ellipse cx={cx - 14} cy={cy + 22} rx={6} ry={8} fill={paper} opacity={0.85} />
         </>
       );
   }

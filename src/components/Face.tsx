@@ -366,6 +366,14 @@ function FaceImpl({
                 <g className="accessories">
                   <Accessories mood={mood} />
                 </g>
+                {resolved.eyesFamily === 'toon' && (
+                  // Cheek blush — soft peachy ovals, signature Toon detail.
+                  // Drawn under everything else so eyes/mouth sit on top.
+                  <g className="cheeks" aria-hidden>
+                    <ellipse cx={180} cy={620} rx={70} ry={42} fill="#ff9aa2" opacity={0.55} />
+                    <ellipse cx={820} cy={620} rx={70} ry={42} fill="#ff9aa2" opacity={0.55} />
+                  </g>
+                )}
                 <g className="brows">
                   <Brows style={resolved.brows} />
                 </g>
@@ -406,6 +414,21 @@ function FaceImpl({
                     animationDelay: `${timings.mouthDelay}s`,
                   }}
                 >
+                  {resolved.mouthFamily === 'toon' && (
+                    // Pink lip rim — thicker salmon stroke behind the mouth
+                    // creates the signature toon "lipped" mouth opening.
+                    // Drawn UNDER the actual mouth path so it reads as a
+                    // ring around the black cavity.
+                    <path
+                      className="mouthLip"
+                      fill="none"
+                      stroke="#ff6b88"
+                      strokeWidth={28}
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      d={mouthPathFor(resolved.mouthFamily, effectiveMouth)}
+                    />
+                  )}
                   <path
                     className="mouthPath"
                     fill="#0a0a0a"
