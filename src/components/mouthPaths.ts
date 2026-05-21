@@ -75,10 +75,45 @@ const pixelMouthPaths: Record<MouthStyle, string> = {
   talk_u: 'M 460 710 L 540 710 L 540 770 L 460 770 Z',
 };
 
+// The "Toon" family — exaggerated cartoon-monster mouths. Wider openings,
+// more pronounced curves, deeper frowns. Pairs naturally with the ToonEye
+// family (heavy black outlines, large pupils) for a cohesive bold-cartoon
+// character.
+const toonMouthPaths: Record<MouthStyle, string> = {
+  // Wide curving smile, slightly fatter than the curve-family default.
+  gentleSmile: 'M 310 690 Q 500 830 690 690',
+  // Massive toothy grin, wider on the X and deeper on the Y.
+  bigSmile: 'M 200 680 Q 500 570 800 680 Q 500 980 200 680 Z',
+  // Dramatic curving frown with thick lower edge implied by the deeper dip.
+  frown: 'M 310 820 Q 500 660 690 820',
+  // Big shocked O.
+  openO: 'M 500 730 m -100 0 a 100 120 0 1 0 200 0 a 100 120 0 1 0 -200 0',
+  // Same tiny O — too small to exaggerate.
+  tinyO: 'M 500 720 m -28 0 a 28 32 0 1 0 56 0 a 28 32 0 1 0 -56 0',
+  // Thicker flat — implied lip-pressed-together via wider Y span.
+  flat: 'M 320 730 Q 500 745 680 730 Q 680 760 500 770 Q 320 760 320 730 Z',
+  // Smirk with stronger asymmetry.
+  smirk: 'M 360 740 Q 460 760 540 720 Q 600 690 640 745',
+  // Tall sustained sing-pose, wider than curve family.
+  singO: 'M 500 690 Q 620 640 620 720 Q 620 870 500 870 Q 380 870 380 720 Q 380 640 500 690 Z',
+  // Bigger wavy.
+  wavy: 'M 290 730 Q 370 690 450 730 T 610 730 T 710 730',
+  // Tongue-out monster grin.
+  tongueOut: 'M 240 670 Q 500 600 760 670 Q 500 920 240 670 Z',
+  // Talk poses — exaggerated openings for stronger cadence reads.
+  talk_a: 'M 280 670 Q 500 600 720 670 Q 500 910 280 670 Z',
+  talk_e: 'M 270 720 Q 500 660 730 720 Q 500 820 270 720 Z',
+  talk_o: 'M 500 720 m -60 0 a 60 75 0 1 0 120 0 a 60 75 0 1 0 -120 0',
+  talk_m: 'M 360 730 Q 500 750 640 730 Q 640 750 500 760 Q 360 750 360 730 Z',
+  talk_i: 'M 300 725 Q 500 750 700 725 Q 700 750 500 765 Q 300 750 300 725 Z',
+  talk_u: 'M 500 730 m -42 0 a 42 52 0 1 0 84 0 a 42 52 0 1 0 -84 0',
+};
+
 // Public dispatcher. Falls back to "curve" for unknown families (defensive
 // against forward-compatible JSONB rows from a future family).
 export function mouthPathFor(family: MouthFamily, expression: MouthStyle): string {
-  const table = family === 'pixel' ? pixelMouthPaths : curveMouthPaths;
+  const table =
+    family === 'pixel' ? pixelMouthPaths : family === 'toon' ? toonMouthPaths : curveMouthPaths;
   return table[expression];
 }
 

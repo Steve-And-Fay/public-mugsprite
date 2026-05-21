@@ -19,6 +19,9 @@ export function Eye({ family, expression, cx, cy, isLeft }: EyeProps) {
   if (family === 'pixel') {
     return <PixelEye style={expression} cx={cx} cy={cy} isLeft={isLeft} />;
   }
+  if (family === 'toon') {
+    return <ToonEye style={expression} cx={cx} cy={cy} isLeft={isLeft} />;
+  }
   return <RoundEye style={expression} cx={cx} cy={cy} isLeft={isLeft} />;
 }
 
@@ -475,6 +478,304 @@ function PixelEye({ style, cx, cy, isLeft }: FamilyEyeProps) {
             />
           </rect>
         </g>
+      );
+  }
+}
+
+// The "Toon" family: chunky cartoon-monster look inspired by bold-outline
+// character art. Heavy black eye outlines, large white sclera, prominent
+// black pupils with crisp catchlights, and a touch of menace where the
+// mood permits (cross + asymm + sparkle especially). Built from thick
+// stroked ellipses and arcs so the family reads as confident and graphic.
+function ToonEye({ style, cx, cy, isLeft }: FamilyEyeProps) {
+  const { ink, paper, isDark } = useFaceInk();
+  const STROKE = 18;
+  const haloOpacity = isDark ? 0.22 : 0.08;
+
+  switch (style) {
+    case 'happy':
+      // Crescent (closed) curving up — classic happy cartoon eye.
+      return (
+        <>
+          <ellipse cx={cx} cy={cy + 6} rx={88} ry={48} fill={ink} opacity={haloOpacity} />
+          <path
+            d={`M ${cx - 90} ${cy + 30} Q ${cx} ${cy - 95} ${cx + 90} ${cy + 30}`}
+            stroke={ink}
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            fill="none"
+          >
+            <animate
+              attributeName="d"
+              values={`M ${cx - 90} ${cy + 30} Q ${cx} ${cy - 95} ${cx + 90} ${cy + 30};M ${cx - 90} ${cy + 22} Q ${cx} ${cy - 110} ${cx + 90} ${cy + 22};M ${cx - 90} ${cy + 30} Q ${cx} ${cy - 95} ${cx + 90} ${cy + 30}`}
+              dur="2s"
+              repeatCount="indefinite"
+            />
+          </path>
+        </>
+      );
+    case 'sad':
+      // Tilted almond sloping down at the outer corner + a teardrop.
+      return (
+        <>
+          <ellipse
+            cx={cx}
+            cy={cy + 10}
+            rx={78}
+            ry={70}
+            fill={paper}
+            stroke={ink}
+            strokeWidth={STROKE / 2}
+          />
+          <ellipse cx={cx - 14} cy={cy + 30} rx={20} ry={28} fill={ink} />
+          <ellipse cx={cx - 22} cy={cy + 18} rx={5} ry={7} fill={paper} />
+          <path
+            d={`M ${cx + 32} ${cy + 70} Q ${cx + 28} ${cy + 120} ${cx + 50} ${cy + 140}`}
+            stroke="#5599DD"
+            strokeWidth={12}
+            strokeLinecap="round"
+            fill="none"
+          >
+            <animate attributeName="opacity" values="0;1;1;0" dur="2.5s" repeatCount="indefinite" />
+          </path>
+        </>
+      );
+    case 'wide':
+      // Huge round eye with small darting pupil — startled cartoon stare.
+      return (
+        <>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={92}
+            fill={paper}
+            stroke={ink}
+            strokeWidth={STROKE / 1.5}
+          />
+          <circle cx={cx + 6} cy={cy - 6} r={28} fill={ink}>
+            <animate attributeName="r" values="28;24;28" dur="0.55s" repeatCount="indefinite" />
+          </circle>
+          <circle cx={cx + 14} cy={cy - 14} r={7} fill={paper} />
+        </>
+      );
+    case 'closed':
+      // Heavy down-curve arc — eyes shut tight, cartoon-style.
+      return (
+        <>
+          <ellipse cx={cx} cy={cy + 12} rx={86} ry={46} fill={ink} opacity={haloOpacity} />
+          <path
+            d={`M ${cx - 88} ${cy} Q ${cx} ${cy + 55} ${cx + 88} ${cy}`}
+            stroke={ink}
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            fill="none"
+          >
+            <animate
+              attributeName="d"
+              values={`M ${cx - 88} ${cy} Q ${cx} ${cy + 55} ${cx + 88} ${cy};M ${cx - 88} ${cy} Q ${cx} ${cy + 62} ${cx + 88} ${cy};M ${cx - 88} ${cy} Q ${cx} ${cy + 55} ${cx + 88} ${cy}`}
+              dur="3.5s"
+              repeatCount="indefinite"
+            />
+          </path>
+        </>
+      );
+    case 'lookUp':
+      // Big almond with the pupil parked at the top — looking up at a thought.
+      return (
+        <>
+          <ellipse
+            cx={cx}
+            cy={cy}
+            rx={72}
+            ry={88}
+            fill={paper}
+            stroke={ink}
+            strokeWidth={STROKE / 1.5}
+          />
+          <ellipse cx={cx + 12} cy={cy - 56} rx={22} ry={28} fill={ink}>
+            <animate
+              attributeName="cx"
+              values={`${cx + 12};${cx - 12};${cx + 12}`}
+              dur="3s"
+              repeatCount="indefinite"
+            />
+          </ellipse>
+        </>
+      );
+    case 'narrow':
+      // Thick horizontal slit — the cartoon "side-eye".
+      return (
+        <>
+          <ellipse
+            cx={cx}
+            cy={cy + 8}
+            rx={84}
+            ry={20}
+            fill={paper}
+            stroke={ink}
+            strokeWidth={STROKE / 1.5}
+          />
+          <ellipse cx={cx + 22} cy={cy + 6} rx={16} ry={14} fill={ink}>
+            <animate
+              attributeName="cx"
+              values={`${cx + 22};${cx - 22};${cx + 22}`}
+              dur="1.2s"
+              repeatCount="indefinite"
+            />
+          </ellipse>
+        </>
+      );
+    case 'sparkle': {
+      // Big shiny eye with a chunky 4-point star that throbs.
+      const sx = cx - 8;
+      const sy = cy - 18;
+      const r = 22;
+      return (
+        <>
+          <ellipse
+            cx={cx}
+            cy={cy}
+            rx={72}
+            ry={90}
+            fill={paper}
+            stroke={ink}
+            strokeWidth={STROKE / 1.5}
+          />
+          <ellipse cx={cx} cy={cy + 8} rx={36} ry={48} fill={ink} />
+          <g style={{ transformOrigin: `${sx}px ${sy}px` }}>
+            <path
+              d={`M ${sx} ${sy - r} L ${sx + r * 0.32} ${sy - r * 0.32} L ${sx + r} ${sy} L ${sx + r * 0.32} ${sy + r * 0.32} L ${sx} ${sy + r} L ${sx - r * 0.32} ${sy + r * 0.32} L ${sx - r} ${sy} L ${sx - r * 0.32} ${sy - r * 0.32} Z`}
+              fill={paper}
+            >
+              <animateTransform
+                attributeName="transform"
+                type="scale"
+                values="1;1.2;0.9;1"
+                dur="1.4s"
+                repeatCount="indefinite"
+                additive="sum"
+              />
+            </path>
+          </g>
+          <circle cx={cx + 20} cy={cy + 28} r={6} fill={paper} opacity={0.85} />
+        </>
+      );
+    }
+    case 'asymm': {
+      // One big bug-eye, one small squint — classic toon "off" expression.
+      const rx = isLeft ? 78 : 48;
+      const ry = isLeft ? 92 : 60;
+      const pupilRx = isLeft ? 22 : 14;
+      const pupilRy = isLeft ? 28 : 16;
+      const pupilDy = isLeft ? 26 : 16;
+      return (
+        <>
+          <ellipse
+            cx={cx}
+            cy={cy}
+            rx={rx}
+            ry={ry}
+            fill={paper}
+            stroke={ink}
+            strokeWidth={STROKE / 1.5}
+          >
+            <animate
+              attributeName="rx"
+              values={`${rx};${rx - 8};${rx}`}
+              dur="2.4s"
+              repeatCount="indefinite"
+            />
+          </ellipse>
+          <ellipse
+            cx={cx + 14}
+            cy={cy - pupilDy}
+            rx={pupilRx}
+            ry={pupilRy}
+            fill={ink}
+          />
+          <ellipse cx={cx + 22} cy={cy - pupilDy - 8} rx={6} ry={8} fill={paper} />
+        </>
+      );
+    }
+    case 'cross': {
+      // Pupils pulled hard toward the nose — full cross-eyed silly.
+      const offset = isLeft ? 32 : -32;
+      return (
+        <>
+          <ellipse
+            cx={cx}
+            cy={cy}
+            rx={72}
+            ry={88}
+            fill={paper}
+            stroke={ink}
+            strokeWidth={STROKE / 1.5}
+          />
+          <ellipse cx={cx + offset} cy={cy - 6} rx={22} ry={30} fill={ink}>
+            <animate
+              attributeName="cy"
+              values={`${cy - 6};${cy - 22};${cy - 6}`}
+              dur="2.5s"
+              repeatCount="indefinite"
+            />
+          </ellipse>
+        </>
+      );
+    }
+    case 'x':
+      // Chunky X — heavy black slashes, bolder than the round-family X.
+      return (
+        <>
+          <line
+            x1={cx - 60}
+            y1={cy - 60}
+            x2={cx + 60}
+            y2={cy + 60}
+            stroke={ink}
+            strokeWidth={STROKE * 1.6}
+            strokeLinecap="round"
+          />
+          <line
+            x1={cx - 60}
+            y1={cy + 60}
+            x2={cx + 60}
+            y2={cy - 60}
+            stroke={ink}
+            strokeWidth={STROKE * 1.6}
+            strokeLinecap="round"
+          />
+        </>
+      );
+    case 'normal':
+    default:
+      // Default: big almond with a strong outline + offset pupil + catchlight.
+      return (
+        <>
+          <ellipse
+            cx={cx}
+            cy={cy}
+            rx={72}
+            ry={92}
+            fill={paper}
+            stroke={ink}
+            strokeWidth={STROKE / 1.5}
+          />
+          <ellipse cx={cx + 12} cy={cy - 18} rx={28} ry={36} fill={ink}>
+            <animate
+              attributeName="cx"
+              values={`${cx + 12};${cx - 6};${cx + 14};${cx + 12}`}
+              dur="6s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="cy"
+              values={`${cy - 18};${cy - 26};${cy - 12};${cy - 18}`}
+              dur="6s"
+              repeatCount="indefinite"
+            />
+          </ellipse>
+          <ellipse cx={cx + 22} cy={cy - 28} rx={9} ry={12} fill={paper} opacity={0.9} />
+        </>
       );
   }
 }

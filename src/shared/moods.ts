@@ -91,8 +91,8 @@ import { z } from 'zod';
 // Brows stay mood-driven and are not part of the builder in v1.
 // ---------------------------------------------------------------------------
 
-export const EYE_FAMILIES = ['round', 'pixel'] as const;
-export const MOUTH_FAMILIES = ['curve', 'pixel'] as const;
+export const EYE_FAMILIES = ['round', 'pixel', 'toon'] as const;
+export const MOUTH_FAMILIES = ['curve', 'pixel', 'toon'] as const;
 
 export type EyeFamily = (typeof EYE_FAMILIES)[number];
 export type MouthFamily = (typeof MOUTH_FAMILIES)[number];
@@ -100,10 +100,12 @@ export type MouthFamily = (typeof MOUTH_FAMILIES)[number];
 export const EYE_FAMILY_LABELS: Record<EyeFamily, string> = {
   round: 'Round',
   pixel: 'Pixel',
+  toon: 'Toon',
 };
 export const MOUTH_FAMILY_LABELS: Record<MouthFamily, string> = {
   curve: 'Curve',
   pixel: 'Pixel',
+  toon: 'Toon',
 };
 
 export const DEFAULT_EYES_FAMILY: EyeFamily = 'round';
