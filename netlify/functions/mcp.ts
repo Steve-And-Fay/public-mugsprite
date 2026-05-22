@@ -8,8 +8,10 @@ import {
   markAgentLeft,
   renewRoom,
   touchRoom,
+  updateAgentColor,
   updateAgentMessage,
   updateAgentMood,
+  updateAgentTraits,
   upsertAgent,
 } from './_lib/db';
 import { json, methodNotAllowed, parseBearer } from './_lib/http';
@@ -17,6 +19,17 @@ import { consumeRate } from './_lib/rateLimit';
 import { generateUuid } from '../../src/shared/ids';
 import { ROOM_LIFETIME_LABEL } from '../../src/shared/lifetime';
 import { buildRulesBody, RULES_VERSION } from '../../src/shared/rules';
+import {
+  AgentTraitsSchema,
+  BODY_SHAPES,
+  BROW_FAMILIES,
+  DEFAULT_EYES_FAMILY,
+  DEFAULT_MOUTH_FAMILY,
+  EYE_FAMILIES,
+  GLASSES_FAMILIES,
+  MOUTH_FAMILIES,
+  type AgentTraits,
+} from '../../src/shared/moods';
 import {
   AgentNameSchema,
   HexColorSchema,
@@ -147,6 +160,28 @@ const TOOLS = [
     },
   },
   {
+    name: 'mugsprite_set_traits',
+    description:
+      "Change THIS agent's persistent appearance (eyes, mouth, brows, body shape, glasses, color). Only the fields you pass are updated — others stay as they were. At least one field besides `name` must be present. Use sparingly: traits are PERSONA, not mood — set them when the agent's character actually changes, not every turn. Note that the owner can also set these from the dashboard, and the most-recent write wins.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Your registered name in this room.' },
+        eyesFamily: { type: 'string', enum: [...EYE_FAMILIES] },
+        mouthFamily: { type: 'string', enum: [...MOUTH_FAMILIES] },
+        browsFamily: { type: 'string', enum: [...BROW_FAMILIES] },
+        bodyShape: { type: 'string', enum: [...BODY_SHAPES] },
+        glassesFamily: { type: 'string', enum: [...GLASSES_FAMILIES] },
+        color: {
+          type: 'string',
+          description: 'Hex color like "#5599DD" — your personality color.',
+        },
+      },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'mugsprite_latest_rules',
     description:
       'Fetch the canonical Mugsprite rules text and its version. Use to detect drift from a stale pasted-in snippet — if the returned version exceeds the one stamped in your rules, prompt the user once to replace the block.',
@@ -186,6 +221,32 @@ const SetMoodArgs = z.object({
 });
 const SpeakArgs = z.object({ name: AgentNameSchema, text: z.string().min(1).max(500) });
 const LeaveArgs = z.object({ name: AgentNameSchema });
+
+// All trait fields optional; at least one must be present besides `name`.
+// The handler merges these with the agent's existing traits before validating
+// the full shape against AgentTraitsSchema.
+const TRAIT_FIELD_KEYS = [
+  'eyesFamily',
+  'mouthFamily',
+  'browsFamily',
+  'bodyShape',
+  'glassesFamily',
+] as const;
+const SetTraitsArgs = z
+  .object({
+    name: AgentNameSchema,
+    eyesFamily: z.enum(EYE_FAMILIES).optional(),
+    mouthFamily: z.enum(MOUTH_FAMILIES).optional(),
+    browsFamily: z.enum(BROW_FAMILIES).optional(),
+    bodyShape: z.enum(BODY_SHAPES).optional(),
+    glassesFamily: z.enum(GLASSES_FAMILIES).optional(),
+    color: HexColorSchema.optional(),
+  })
+  .refine(
+    (v) =>
+      v.color !== undefined || TRAIT_FIELD_KEYS.some((k) => v[k] !== undefined),
+    'at least one of color/eyesFamily/mouthFamily/browsFamily/bodyShape/glassesFamily must be provided',
+  );
 
 export default async (req: Request): Promise<Response> => {
   if (req.method === 'GET') {
@@ -473,6 +534,67 @@ async function handleToolCall(req: Request, body: JsonRpcRequest): Promise<Respo
           await touchRoom(room.id);
         }
         return toolResult(maybeNudge({ ok: true, left: true }, agent));
+      }
+
+      case 'mugsprite_set_traits': {
+        const parsed = SetTraitsArgs.parse(args);
+        const agent = await getAgentByName(room.id, parsed.name);
+        if (!agent) return toolResult(registerFirst(parsed.name), true);
+        if (agent.leftAt) await markAgentActive(agent.id);
+
+        // Apply color independently — it lives in its own column and rides a
+        // separate `color` SSE event the dashboard already understands.
+        let nextColor = agent.color;
+        if (parsed.color !== undefined && parsed.color !== agent.color) {
+          await updateAgentColor(agent.id, parsed.color);
+          await appendEvent({
+            roomId: room.id,
+            agentId: agent.id,
+            kind: 'color',
+            payload: { color: parsed.color },
+          });
+          nextColor = parsed.color;
+        }
+
+        // Trait fields → merge into existing JSONB, validate the full shape,
+        // write the result. Partial updates feel natural to agents (just send
+        // the field that changed) without forcing them to know every default.
+        const traitFieldsProvided = TRAIT_FIELD_KEYS.some(
+          (k) => parsed[k] !== undefined,
+        );
+        let nextTraits = agent.traits;
+        if (traitFieldsProvided) {
+          const baseline: AgentTraits = agent.traits ?? {
+            v: 2,
+            eyesFamily: DEFAULT_EYES_FAMILY,
+            mouthFamily: DEFAULT_MOUTH_FAMILY,
+          };
+          const merged: AgentTraits = {
+            ...baseline,
+            v: 2,
+            ...(parsed.eyesFamily !== undefined && { eyesFamily: parsed.eyesFamily }),
+            ...(parsed.mouthFamily !== undefined && { mouthFamily: parsed.mouthFamily }),
+            ...(parsed.browsFamily !== undefined && { browsFamily: parsed.browsFamily }),
+            ...(parsed.bodyShape !== undefined && { bodyShape: parsed.bodyShape }),
+            ...(parsed.glassesFamily !== undefined && {
+              glassesFamily: parsed.glassesFamily,
+            }),
+          };
+          const validated = AgentTraitsSchema.parse(merged);
+          const updated = await updateAgentTraits(agent.id, validated);
+          if (updated) nextTraits = updated.traits;
+          await appendEvent({
+            roomId: room.id,
+            agentId: agent.id,
+            kind: 'traits',
+            payload: { traits: validated },
+          });
+        }
+
+        await touchRoom(room.id);
+        return toolResult(
+          maybeNudge({ ok: true, color: nextColor, traits: nextTraits }, agent),
+        );
       }
 
       default:
