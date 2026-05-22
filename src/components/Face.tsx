@@ -9,18 +9,28 @@ import {
 } from '@shared/moods';
 import {
   Accessories,
-  Beard,
   bodyBorderRadiusFor,
   Brows,
-  Cheeks,
   Eye,
   Glasses,
-  Hair,
-  Mustache,
   Teeth,
 } from './FaceParts';
 import { FaceInkContext, type FaceInk } from './faceInk';
 import { mouthPathFor, tonguePath } from './mouthPaths';
+
+// Toon mouths that show an actual opening (cavity + teeth/tongue inside)
+// and therefore benefit from the pink salmon "lip" rim that defines the
+// cartoon-monster look. Thin/closed mouths render with the regular ink
+// stroke so they don't read as a salmon worm across the face.
+const TOON_LIPPED_MOUTHS = new Set<MouthStyle>([
+  'bigSmile',
+  'openO',
+  'singO',
+  'tongueOut',
+  'talk_a',
+  'talk_e',
+  'talk_o',
+]);
 
 // Flip the linework to a light token when the agent picked a dark color, so
 // the eyes/brows/mouth don't disappear into a black-on-black face. `paper`
@@ -377,14 +387,8 @@ function FaceImpl({
                 role="img"
                 aria-label={`${name} agent — ${moodDef.label}`}
               >
-                <g className="hair" aria-hidden>
-                  <Hair family={resolved.hairFamily} />
-                </g>
                 <g className="accessories">
                   <Accessories mood={mood} />
-                </g>
-                <g className="cheeks" aria-hidden>
-                  <Cheeks family={resolved.cheeksFamily} />
                 </g>
                 <g className="brows">
                   <Brows family={resolved.browsFamily} style={resolved.browsExpression} />
@@ -422,9 +426,6 @@ function FaceImpl({
                 <g className="glasses" aria-hidden>
                   <Glasses family={resolved.glassesFamily} />
                 </g>
-                <g className="mustache" aria-hidden>
-                  <Mustache family={resolved.mustacheFamily} />
-                </g>
                 <g
                   className="mouthGroup"
                   style={{
@@ -432,11 +433,12 @@ function FaceImpl({
                     animationDelay: `${timings.mouthDelay}s`,
                   }}
                 >
-                  {resolved.mouthFamily === 'toon' && (
-                    // Pink lip rim — thicker salmon stroke behind the mouth
-                    // creates the signature toon "lipped" mouth opening.
-                    // Drawn UNDER the actual mouth path so it reads as a
-                    // ring around the black cavity.
+                  {resolved.mouthFamily === 'toon' && TOON_LIPPED_MOUTHS.has(effectiveMouth) && (
+                    // Pink lip rim — only on mouths that actually OPEN.
+                    // Thin/closed mouths (gentleSmile, flat, smirk, wavy,
+                    // frown, tinyO) would read as wormy salmon outlines
+                    // otherwise. The lip rim is the signature toon look
+                    // around an actual gaping mouth.
                     <path
                       className="mouthLip"
                       fill="none"
@@ -466,9 +468,6 @@ function FaceImpl({
                     strokeWidth={5}
                     d={tonguePath(resolved.mouthFamily, effectiveMouth)}
                   />
-                </g>
-                <g className="beard" aria-hidden>
-                  <Beard family={resolved.beardFamily} />
                 </g>
               </svg>
             </div>

@@ -94,22 +94,14 @@ import { z } from 'zod';
 export const EYE_FAMILIES = ['round', 'pixel', 'toon'] as const;
 export const MOUTH_FAMILIES = ['curve', 'pixel', 'toon'] as const;
 export const BROW_FAMILIES = ['default', 'bold'] as const;
-export const CHEEK_FAMILIES = ['none', 'blush'] as const;
 export const BODY_SHAPES = ['square', 'circle'] as const;
 export const GLASSES_FAMILIES = ['none', 'sunglasses', 'round', 'square'] as const;
-export const HAIR_FAMILIES = ['none', 'spike', 'mohawk', 'curls'] as const;
-export const BEARD_FAMILIES = ['none', 'goatee', 'full', 'stubble'] as const;
-export const MUSTACHE_FAMILIES = ['none', 'thin', 'thick', 'handlebar'] as const;
 
 export type EyeFamily = (typeof EYE_FAMILIES)[number];
 export type MouthFamily = (typeof MOUTH_FAMILIES)[number];
 export type BrowFamily = (typeof BROW_FAMILIES)[number];
-export type CheekFamily = (typeof CHEEK_FAMILIES)[number];
 export type BodyShape = (typeof BODY_SHAPES)[number];
 export type GlassesFamily = (typeof GLASSES_FAMILIES)[number];
-export type HairFamily = (typeof HAIR_FAMILIES)[number];
-export type BeardFamily = (typeof BEARD_FAMILIES)[number];
-export type MustacheFamily = (typeof MUSTACHE_FAMILIES)[number];
 
 export const EYE_FAMILY_LABELS: Record<EyeFamily, string> = {
   round: 'Round',
@@ -125,10 +117,6 @@ export const BROW_FAMILY_LABELS: Record<BrowFamily, string> = {
   default: 'Classic',
   bold: 'Bold',
 };
-export const CHEEK_FAMILY_LABELS: Record<CheekFamily, string> = {
-  none: 'None',
-  blush: 'Blush',
-};
 export const BODY_SHAPE_LABELS: Record<BodyShape, string> = {
   square: 'Square',
   circle: 'Circle',
@@ -139,34 +127,12 @@ export const GLASSES_FAMILY_LABELS: Record<GlassesFamily, string> = {
   round: 'Round',
   square: 'Square',
 };
-export const HAIR_FAMILY_LABELS: Record<HairFamily, string> = {
-  none: 'None',
-  spike: 'Spike',
-  mohawk: 'Mohawk',
-  curls: 'Curls',
-};
-export const BEARD_FAMILY_LABELS: Record<BeardFamily, string> = {
-  none: 'None',
-  goatee: 'Goatee',
-  full: 'Full',
-  stubble: 'Stubble',
-};
-export const MUSTACHE_FAMILY_LABELS: Record<MustacheFamily, string> = {
-  none: 'None',
-  thin: 'Thin',
-  thick: 'Thick',
-  handlebar: 'Curly',
-};
 
 export const DEFAULT_EYES_FAMILY: EyeFamily = 'round';
 export const DEFAULT_MOUTH_FAMILY: MouthFamily = 'curve';
 export const DEFAULT_BROWS_FAMILY: BrowFamily = 'default';
-export const DEFAULT_CHEEKS_FAMILY: CheekFamily = 'none';
 export const DEFAULT_BODY_SHAPE: BodyShape = 'square';
 export const DEFAULT_GLASSES_FAMILY: GlassesFamily = 'none';
-export const DEFAULT_HAIR_FAMILY: HairFamily = 'none';
-export const DEFAULT_BEARD_FAMILY: BeardFamily = 'none';
-export const DEFAULT_MUSTACHE_FAMILY: MustacheFamily = 'none';
 
 // Persistent visual identity an owner can set on an agent. v = schema version.
 // v=2 is the family-based schema. Brows and cheeks were added later as
@@ -177,12 +143,8 @@ export interface AgentTraits {
   eyesFamily: EyeFamily;
   mouthFamily: MouthFamily;
   browsFamily?: BrowFamily;
-  cheeksFamily?: CheekFamily;
   bodyShape?: BodyShape;
   glassesFamily?: GlassesFamily;
-  hairFamily?: HairFamily;
-  beardFamily?: BeardFamily;
-  mustacheFamily?: MustacheFamily;
 }
 
 export const AgentTraitsSchema = z.object({
@@ -190,12 +152,8 @@ export const AgentTraitsSchema = z.object({
   eyesFamily: z.enum(EYE_FAMILIES),
   mouthFamily: z.enum(MOUTH_FAMILIES),
   browsFamily: z.enum(BROW_FAMILIES).optional(),
-  cheeksFamily: z.enum(CHEEK_FAMILIES).optional(),
   bodyShape: z.enum(BODY_SHAPES).optional(),
   glassesFamily: z.enum(GLASSES_FAMILIES).optional(),
-  hairFamily: z.enum(HAIR_FAMILIES).optional(),
-  beardFamily: z.enum(BEARD_FAMILIES).optional(),
-  mustacheFamily: z.enum(MUSTACHE_FAMILIES).optional(),
 });
 
 // Pure composition helper. Picks every family from traits (falling back to
@@ -211,12 +169,8 @@ export function resolveFaceParts(
   mouthExpression: MouthStyle;
   browsFamily: BrowFamily;
   browsExpression: BrowStyle;
-  cheeksFamily: CheekFamily;
   bodyShape: BodyShape;
   glassesFamily: GlassesFamily;
-  hairFamily: HairFamily;
-  beardFamily: BeardFamily;
-  mustacheFamily: MustacheFamily;
 } {
   const moodDef = MOODS[mood];
   return {
@@ -226,11 +180,7 @@ export function resolveFaceParts(
     mouthExpression: moodDef.mouth,
     browsFamily: traits?.browsFamily ?? DEFAULT_BROWS_FAMILY,
     browsExpression: moodDef.brows,
-    cheeksFamily: traits?.cheeksFamily ?? DEFAULT_CHEEKS_FAMILY,
     bodyShape: traits?.bodyShape ?? DEFAULT_BODY_SHAPE,
     glassesFamily: traits?.glassesFamily ?? DEFAULT_GLASSES_FAMILY,
-    hairFamily: traits?.hairFamily ?? DEFAULT_HAIR_FAMILY,
-    beardFamily: traits?.beardFamily ?? DEFAULT_BEARD_FAMILY,
-    mustacheFamily: traits?.mustacheFamily ?? DEFAULT_MUSTACHE_FAMILY,
   };
 }

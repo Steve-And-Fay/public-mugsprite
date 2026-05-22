@@ -1,45 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   AgentTraitsSchema,
-  BEARD_FAMILIES,
-  BEARD_FAMILY_LABELS,
   BODY_SHAPE_LABELS,
   BODY_SHAPES,
   BROW_FAMILIES,
   BROW_FAMILY_LABELS,
-  CHEEK_FAMILIES,
-  CHEEK_FAMILY_LABELS,
-  DEFAULT_BEARD_FAMILY,
   DEFAULT_BODY_SHAPE,
   DEFAULT_BROWS_FAMILY,
-  DEFAULT_CHEEKS_FAMILY,
   DEFAULT_EYES_FAMILY,
   DEFAULT_GLASSES_FAMILY,
-  DEFAULT_HAIR_FAMILY,
   DEFAULT_MOUTH_FAMILY,
-  DEFAULT_MUSTACHE_FAMILY,
   EYE_FAMILIES,
   EYE_FAMILY_LABELS,
   GLASSES_FAMILIES,
   GLASSES_FAMILY_LABELS,
-  HAIR_FAMILIES,
-  HAIR_FAMILY_LABELS,
   MOOD_KEYS,
   MOODS,
   MOUTH_FAMILIES,
   MOUTH_FAMILY_LABELS,
-  MUSTACHE_FAMILIES,
-  MUSTACHE_FAMILY_LABELS,
   type AgentTraits,
-  type BeardFamily,
   type BodyShape,
   type BrowFamily,
-  type CheekFamily,
   type EyeFamily,
   type GlassesFamily,
-  type HairFamily,
   type MouthFamily,
-  type MustacheFamily,
 } from '@shared/moods';
 import type { Agent } from '@shared/types';
 import { api } from '../lib/api';
@@ -57,28 +41,13 @@ const STARTING_DEFAULTS: AgentTraits = {
   eyesFamily: DEFAULT_EYES_FAMILY,
   mouthFamily: DEFAULT_MOUTH_FAMILY,
   browsFamily: DEFAULT_BROWS_FAMILY,
-  cheeksFamily: DEFAULT_CHEEKS_FAMILY,
   bodyShape: DEFAULT_BODY_SHAPE,
   glassesFamily: DEFAULT_GLASSES_FAMILY,
-  hairFamily: DEFAULT_HAIR_FAMILY,
-  beardFamily: DEFAULT_BEARD_FAMILY,
-  mustacheFamily: DEFAULT_MUSTACHE_FAMILY,
 };
 
 // Tabs are the scaling primitive — every new customization category becomes
 // a new tab without restructuring the rest of the UI.
-const TAB_IDS = [
-  'body',
-  'eyes',
-  'brows',
-  'glasses',
-  'mouth',
-  'mustache',
-  'beard',
-  'hair',
-  'cheeks',
-  'color',
-] as const;
+const TAB_IDS = ['body', 'eyes', 'brows', 'glasses', 'mouth', 'color'] as const;
 type TabId = (typeof TAB_IDS)[number];
 const TAB_LABELS: Record<TabId, string> = {
   body: 'Body',
@@ -86,10 +55,6 @@ const TAB_LABELS: Record<TabId, string> = {
   brows: 'Brows',
   glasses: 'Glasses',
   mouth: 'Mouth',
-  mustache: 'Stash',
-  beard: 'Beard',
-  hair: 'Hair',
-  cheeks: 'Cheeks',
   color: 'Color',
 };
 
@@ -100,23 +65,11 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
   const [browsFamily, setBrowsFamily] = useState<BrowFamily>(
     starting.browsFamily ?? DEFAULT_BROWS_FAMILY,
   );
-  const [cheeksFamily, setCheeksFamily] = useState<CheekFamily>(
-    starting.cheeksFamily ?? DEFAULT_CHEEKS_FAMILY,
-  );
   const [bodyShape, setBodyShape] = useState<BodyShape>(
     starting.bodyShape ?? DEFAULT_BODY_SHAPE,
   );
   const [glassesFamily, setGlassesFamily] = useState<GlassesFamily>(
     starting.glassesFamily ?? DEFAULT_GLASSES_FAMILY,
-  );
-  const [hairFamily, setHairFamily] = useState<HairFamily>(
-    starting.hairFamily ?? DEFAULT_HAIR_FAMILY,
-  );
-  const [beardFamily, setBeardFamily] = useState<BeardFamily>(
-    starting.beardFamily ?? DEFAULT_BEARD_FAMILY,
-  );
-  const [mustacheFamily, setMustacheFamily] = useState<MustacheFamily>(
-    starting.mustacheFamily ?? DEFAULT_MUSTACHE_FAMILY,
   );
   const [color, setColor] = useState<string>(agent.color);
   const [tab, setTab] = useState<TabId>('eyes');
@@ -142,24 +95,10 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
       eyesFamily,
       mouthFamily,
       browsFamily,
-      cheeksFamily,
       bodyShape,
       glassesFamily,
-      hairFamily,
-      beardFamily,
-      mustacheFamily,
     }),
-    [
-      eyesFamily,
-      mouthFamily,
-      browsFamily,
-      cheeksFamily,
-      bodyShape,
-      glassesFamily,
-      hairFamily,
-      beardFamily,
-      mustacheFamily,
-    ],
+    [eyesFamily, mouthFamily, browsFamily, bodyShape, glassesFamily],
   );
 
   const handleSave = async () => {
@@ -354,25 +293,6 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                   )}
                 />
               )}
-              {tab === 'cheeks' && (
-                <FamilyGrid
-                  families={CHEEK_FAMILIES}
-                  labels={CHEEK_FAMILY_LABELS}
-                  value={cheeksFamily}
-                  onChange={setCheeksFamily}
-                  renderTile={(family) => (
-                    <Face
-                      mood="happy"
-                      color={color}
-                      name=""
-                      traits={{ ...traits, cheeksFamily: family }}
-                      muted
-                      volume={0}
-                      compact
-                    />
-                  )}
-                />
-              )}
               {tab === 'body' && (
                 <FamilyGrid
                   families={BODY_SHAPES}
@@ -404,63 +324,6 @@ export function MugBuilder({ agent, ownerToken, onSaved, onDismiss }: MugBuilder
                       color={color}
                       name=""
                       traits={{ ...traits, glassesFamily: family }}
-                      muted
-                      volume={0}
-                      compact
-                    />
-                  )}
-                />
-              )}
-              {tab === 'hair' && (
-                <FamilyGrid
-                  families={HAIR_FAMILIES}
-                  labels={HAIR_FAMILY_LABELS}
-                  value={hairFamily}
-                  onChange={setHairFamily}
-                  renderTile={(family) => (
-                    <Face
-                      mood="idle"
-                      color={color}
-                      name=""
-                      traits={{ ...traits, hairFamily: family }}
-                      muted
-                      volume={0}
-                      compact
-                    />
-                  )}
-                />
-              )}
-              {tab === 'mustache' && (
-                <FamilyGrid
-                  families={MUSTACHE_FAMILIES}
-                  labels={MUSTACHE_FAMILY_LABELS}
-                  value={mustacheFamily}
-                  onChange={setMustacheFamily}
-                  renderTile={(family) => (
-                    <Face
-                      mood="idle"
-                      color={color}
-                      name=""
-                      traits={{ ...traits, mustacheFamily: family }}
-                      muted
-                      volume={0}
-                      compact
-                    />
-                  )}
-                />
-              )}
-              {tab === 'beard' && (
-                <FamilyGrid
-                  families={BEARD_FAMILIES}
-                  labels={BEARD_FAMILY_LABELS}
-                  value={beardFamily}
-                  onChange={setBeardFamily}
-                  renderTile={(family) => (
-                    <Face
-                      mood="idle"
-                      color={color}
-                      name=""
-                      traits={{ ...traits, beardFamily: family }}
                       muted
                       volume={0}
                       compact

@@ -80,8 +80,9 @@ const pixelMouthPaths: Record<MouthStyle, string> = {
 // family (heavy black outlines, large pupils) for a cohesive bold-cartoon
 // character.
 const toonMouthPaths: Record<MouthStyle, string> = {
-  // Cute lens smile — a closed shape with body, not just an arc.
-  gentleSmile: 'M 320 690 Q 500 820 680 690 Q 500 760 320 690 Z',
+  // Cute closed smile arc — gentle upward curve, single thick stroke.
+  // The renderer fills this and the result reads as a friendly "u" smile.
+  gentleSmile: 'M 320 700 Q 500 800 680 700',
   // Massive toothy grin, wider on the X and deeper on the Y.
   bigSmile: 'M 200 680 Q 500 570 800 680 Q 500 980 200 680 Z',
   // Dramatic curving frown with thick lower edge implied by the deeper dip.
