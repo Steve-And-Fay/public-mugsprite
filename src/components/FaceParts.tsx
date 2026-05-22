@@ -1165,24 +1165,17 @@ function BoldBrows({ style }: { style: BrowStyle }) {
 // Cheeks: cosmetic decoration drawn over the personality-color background but
 // under the facial features. Family-dispatched so we can add freckles,
 // stripes, whiskers, etc. as new families later without changing callers.
-// Body shape clip-path values. Applied via CSS to the colored container div.
-// Returning an empty string means "no clip" — keeps the default rounded-square.
-//
-// `heart` and `blob` reference SVG clipPath definitions in MugClipPaths
-// (rendered once at the app root) so they can use real Bézier curves.
-// Polygon clip-paths can only do straight lines and look jagged.
+// Body shape border-radius values. Returning a CSS length keeps the CSS
+// border + box-shadow intact (clip-path would clip them away). Both
+// supported shapes can be expressed as a corner radius.
 // eslint-disable-next-line react-refresh/only-export-components
-export function bodyClipPathFor(shape: BodyShape): string {
+export function bodyBorderRadiusFor(shape: BodyShape): string {
   switch (shape) {
     case 'circle':
-      return 'circle(50% at 50% 50%)';
-    case 'heart':
-      return 'url(#mug-heart)';
-    case 'blob':
-      return 'url(#mug-blob)';
+      return '50%';
     case 'square':
     default:
-      return '';
+      return '22px';
   }
 }
 

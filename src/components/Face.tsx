@@ -10,7 +10,7 @@ import {
 import {
   Accessories,
   Beard,
-  bodyClipPathFor,
+  bodyBorderRadiusFor,
   Brows,
   Cheeks,
   Eye,
@@ -272,48 +272,26 @@ function FaceImpl({
       style={{ transform: `scale(${shrinkScale.toFixed(3)})` }}
     >
       <div
-        className={`group relative aspect-square w-full overflow-hidden select-none ${
-          resolved.bodyShape === 'square'
-            ? 'rounded-[22px] border-[3px] border-ink shadow-brutal-lg'
-            : ''
-        }`}
+        className="group relative aspect-square w-full overflow-hidden border-[3px] border-ink shadow-brutal-lg select-none"
         style={{
-          // Bake the top-sheen + bottom-shadow gradient INTO the background
-          // itself instead of stacking inset overlay divs. Inset divs are
-          // positioned against the rectangular bounds, so when clip-path
-          // crops the visible area (heart/circle/blob), the gradient ends up
-          // mostly outside the visible shape. A background gradient is part
-          // of the surface being clipped and naturally follows the shape.
-          //
-          // Alphas are stronger here than the original square so the depth
-          // still reads on non-square shapes that have no border/box-shadow
-          // to anchor the eye. The square also benefits — slightly more
-          // dimensional than before, still in the same brutalist key.
           backgroundColor: color,
-          backgroundImage:
-            'linear-gradient(to bottom, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.28) 100%)',
-          clipPath: bodyClipPathFor(resolved.bodyShape) || undefined,
-          // Box-shadow and border both get clipped by clip-path; for
-          // non-square shapes use stacked drop-shadow filters to recreate
-          // BOTH the 3px ink outline AND the 6px offset brutal shadow that
-          // gives the square its signature chunky neo-brutalist depth.
-          //
-          // Four directional 3px drop-shadows compound into what reads as
-          // a 3px ink outline following the actual silhouette (heart point,
-          // blob curves, circle edge). The final 6px shadow is the brutal
-          // offset shadow applied to the now-outlined shape.
-          filter:
-            resolved.bodyShape === 'square'
-              ? undefined
-              : [
-                  'drop-shadow(0 -3px 0 #1a1a1a)',
-                  'drop-shadow(0 3px 0 #1a1a1a)',
-                  'drop-shadow(-3px 0 0 #1a1a1a)',
-                  'drop-shadow(3px 0 0 #1a1a1a)',
-                  'drop-shadow(6px 6px 0 #1a1a1a)',
-                ].join(' '),
+          borderRadius: bodyBorderRadiusFor(resolved.bodyShape),
         }}
       >
+        {/* Top sheen — subtle white gradient for depth */}
+        <div
+          className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(255,255,255,0.18), transparent)',
+          }}
+        />
+        {/* Bottom shadow — anchors the face */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-1/4 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to top, rgba(0,0,0,0.12), transparent)',
+          }}
+        />
 
         {!compact && (
           <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[9px] sm:text-[10px] tracking-widest shadow-brutal-sm z-10">
@@ -399,27 +377,6 @@ function FaceImpl({
                 role="img"
                 aria-label={`${name} agent — ${moodDef.label}`}
               >
-                {/* In-SVG gradient overlay. Drawn at the back so face features
-                    render on top. Inside the SVG it's guaranteed to render
-                    within the clipped silhouette (heart/circle/blob/etc.)
-                    regardless of how CSS clip-path treats container-level
-                    backgrounds. Subtle enough to not muddy the features. */}
-                <defs>
-                  <linearGradient id="mug-face-shading" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ffffff" stopOpacity="0.32" />
-                    <stop offset="40%" stopColor="#ffffff" stopOpacity="0" />
-                    <stop offset="60%" stopColor="#000000" stopOpacity="0" />
-                    <stop offset="100%" stopColor="#000000" stopOpacity="0.28" />
-                  </linearGradient>
-                </defs>
-                <rect
-                  x={0}
-                  y={0}
-                  width={1000}
-                  height={1000}
-                  fill="url(#mug-face-shading)"
-                  pointerEvents="none"
-                />
                 <g className="hair" aria-hidden>
                   <Hair family={resolved.hairFamily} />
                 </g>

@@ -1,7 +1,6 @@
 import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { MugClipPaths } from './components/MugClipPaths';
 import { useAnalytics } from './lib/useAnalytics';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -88,10 +87,6 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      {/* Global SVG <defs> for non-rectangular body shapes. Referenced by
-          Face tiles via clip-path: url(#mug-heart) etc. Rendered once
-          at the app root so every Face instance can reference the same IDs. */}
-      <MugClipPaths />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* TV view: no Layout (no banner, no footer) — chromeless full screen. */}

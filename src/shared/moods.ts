@@ -95,7 +95,7 @@ export const EYE_FAMILIES = ['round', 'pixel', 'toon'] as const;
 export const MOUTH_FAMILIES = ['curve', 'pixel', 'toon'] as const;
 export const BROW_FAMILIES = ['default', 'bold'] as const;
 export const CHEEK_FAMILIES = ['none', 'blush'] as const;
-export const BODY_SHAPES = ['square', 'circle', 'heart', 'blob'] as const;
+export const BODY_SHAPES = ['square', 'circle'] as const;
 export const GLASSES_FAMILIES = ['none', 'sunglasses', 'round', 'square'] as const;
 export const HAIR_FAMILIES = ['none', 'spike', 'mohawk', 'curls'] as const;
 export const BEARD_FAMILIES = ['none', 'goatee', 'full', 'stubble'] as const;
@@ -132,8 +132,6 @@ export const CHEEK_FAMILY_LABELS: Record<CheekFamily, string> = {
 export const BODY_SHAPE_LABELS: Record<BodyShape, string> = {
   square: 'Square',
   circle: 'Circle',
-  heart: 'Heart',
-  blob: 'Blob',
 };
 export const GLASSES_FAMILY_LABELS: Record<GlassesFamily, string> = {
   none: 'None',
