@@ -289,8 +289,18 @@ function FaceImpl({
           }}
         />
 
+        {/* Chrome chip positions: on the rounded-square the chips sit ~10px
+            from each corner. The corners of an inscribed circle don't reach
+            into that area, so on circle body shape the chips get clipped by
+            overflow-hidden + border-radius. Push them inward to ~32px so
+            they sit safely inside the visible circle. Speech bubble also
+            narrows on circle so it fits at its chosen y-offset. */}
         {!compact && (
-          <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[9px] sm:text-[10px] tracking-widest shadow-brutal-sm z-10">
+          <div
+            className={`absolute px-2.5 py-1 bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[9px] sm:text-[10px] tracking-widest shadow-brutal-sm z-10 ${
+              resolved.bodyShape === 'circle' ? 'top-8 left-8' : 'top-2.5 left-2.5'
+            }`}
+          >
             {moodDef.label.toUpperCase()}
           </div>
         )}
@@ -301,7 +311,9 @@ function FaceImpl({
             onClick={onDismiss}
             aria-label={`Hide ${name} from the grid until the next update`}
             title="Hide until next update"
-            className="absolute top-2 right-2 w-6 h-6 sm:w-7 sm:h-7 grid place-items-center bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[11px] sm:text-xs leading-none shadow-brutal-sm z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition"
+            className={`absolute w-6 h-6 sm:w-7 sm:h-7 grid place-items-center bg-paper/95 text-ink border-2 border-ink rounded-full font-display text-[11px] sm:text-xs leading-none shadow-brutal-sm z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition ${
+              resolved.bodyShape === 'circle' ? 'top-8 right-8' : 'top-2 right-2'
+            }`}
           >
             ×
           </button>
@@ -314,8 +326,14 @@ function FaceImpl({
             aria-label={`Customize ${name}'s appearance`}
             title="Customize this mug"
             className={`absolute z-20 font-display text-[9px] sm:text-[10px] tracking-widest leading-none px-2 py-1 bg-accent-yellow text-ink border-2 border-ink rounded-full shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition ${
-              onDismiss ? 'top-10' : 'top-2'
-            } right-2 ${
+              resolved.bodyShape === 'circle'
+                ? onDismiss
+                  ? 'top-16 right-8'
+                  : 'top-8 right-8'
+                : onDismiss
+                  ? 'top-10 right-2'
+                  : 'top-2 right-2'
+            } ${
               showHint
                 ? 'opacity-100'
                 : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto'
@@ -327,10 +345,16 @@ function FaceImpl({
 
         {age >= STALE_BADGE_AFTER_MS && !speakingText && (
           <div
-            className={`absolute top-2.5 px-2 py-0.5 bg-ink/80 text-paper rounded-full font-display text-[8px] sm:text-[9px] tracking-widest z-10 transition-all duration-150 ${
+            className={`absolute px-2 py-0.5 bg-ink/80 text-paper rounded-full font-display text-[8px] sm:text-[9px] tracking-widest z-10 transition-all duration-150 ${
+              resolved.bodyShape === 'circle' ? 'top-8' : 'top-2.5'
+            } ${
               onDismiss
-                ? 'right-2.5 group-hover:right-11 group-focus-within:right-11'
-                : 'right-2.5'
+                ? resolved.bodyShape === 'circle'
+                  ? 'right-8 group-hover:right-16 group-focus-within:right-16'
+                  : 'right-2.5 group-hover:right-11 group-focus-within:right-11'
+                : resolved.bodyShape === 'circle'
+                  ? 'right-8'
+                  : 'right-2.5'
             }`}
             title={`Last update ${formatRelative(age)} ago`}
           >
@@ -340,7 +364,9 @@ function FaceImpl({
 
         {speakingText && (
           <div
-            className="absolute left-1/2 -translate-x-1/2 top-2 z-20 pointer-events-none w-[88%]"
+            className={`absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none ${
+              resolved.bodyShape === 'circle' ? 'top-12 w-[72%]' : 'top-2 w-[88%]'
+            }`}
             role="status"
             aria-live="polite"
           >
