@@ -795,73 +795,6 @@ function ToonEye({ style, cx, cy, isLeft }: FamilyEyeProps) {
   }
 }
 
-// Toon teeth: chunky rectangular row across the wide-open mouths, plus a
-// signature fang on the "angry" snarl (flat mouth) so the monster aesthetic
-// reads even when the mouth is mostly closed.
-function ToonTeeth({ mouth, ink }: { mouth: MouthStyle; ink: string }) {
-  // Per-expression layout — top-row teeth + occasional fangs.
-  // x range and y position vary per mouth shape so teeth sit visually inside
-  // the path's opening, not floating in the cavity above or below.
-  const config: Partial<
-    Record<
-      MouthStyle,
-      { startX: number; endX: number; y: number; h: number; cols: number; fangs?: boolean }
-    >
-  > = {
-    bigSmile: { startX: 250, endX: 750, y: 678, h: 50, cols: 6 },
-    tongueOut: { startX: 250, endX: 750, y: 678, h: 38, cols: 6 },
-    openO: { startX: 410, endX: 590, y: 660, h: 30, cols: 3 },
-    singO: { startX: 410, endX: 590, y: 680, h: 26, cols: 2 },
-    talk_a: { startX: 290, endX: 710, y: 678, h: 38, cols: 5 },
-    talk_e: { startX: 290, endX: 710, y: 720, h: 22, cols: 5 },
-    talk_o: { startX: 440, endX: 560, y: 700, h: 22, cols: 2 },
-    talk_i: { startX: 320, endX: 680, y: 718, h: 16, cols: 6 },
-    talk_m: { startX: 380, endX: 620, y: 728, h: 12, cols: 5 },
-    flat: { startX: 360, endX: 640, y: 720, h: 14, cols: 4, fangs: true },
-  };
-
-  const c = config[mouth];
-  if (!c) return null;
-  const w = (c.endX - c.startX) / c.cols;
-
-  return (
-    <>
-      {Array.from({ length: c.cols }).map((_, i) => (
-        <rect
-          key={i}
-          x={c.startX + i * w + 4}
-          y={c.y}
-          width={w - 8}
-          height={c.h}
-          fill="#fdf6e3"
-          stroke={ink}
-          strokeWidth={4}
-          rx={3}
-        />
-      ))}
-      {c.fangs && (
-        // Two pointy fangs hanging well BELOW the mouth line — signature toon
-        // snarl. Drawn larger so they actually read on small face renders,
-        // and shifted outward toward the corners of the mouth.
-        <>
-          <path
-            d="M 390 720 L 430 720 L 410 800 Z"
-            fill="#fdf6e3"
-            stroke={ink}
-            strokeWidth={4}
-          />
-          <path
-            d="M 570 720 L 610 720 L 590 800 Z"
-            fill="#fdf6e3"
-            stroke={ink}
-            strokeWidth={4}
-          />
-        </>
-      )}
-    </>
-  );
-}
-
 // Brows dispatcher: pick the family-specific renderer, hand it the
 // mood-driven expression. Every family must implement every BrowStyle key.
 export function Brows({ family, style }: { family: BrowFamily; style: BrowStyle }) {
@@ -1488,16 +1421,13 @@ export function Accessories({ mood }: { mood: MoodKey }) {
   }
 }
 
-export function Teeth({ mouth, family }: { mouth: MouthStyle; family: MouthFamily }) {
+export function Teeth({ mouth, family: _family }: { mouth: MouthStyle; family: MouthFamily }) {
   const { ink } = useFaceInk();
 
-  // The "Toon" family shows chunkier teeth across many more expressions to
-  // sell the cartoon-monster look — wide grin, snarl, gasp, lipsync poses all
-  // show a row of teeth, and a few moods get a single fang.
-  if (family === 'toon') return <ToonTeeth mouth={mouth} ink={ink} />;
-
-  // Curve/Pixel families: original behavior — a row of teeth for the wide
-  // smile poses only.
+  // Curve and Pixel families share the same teeth treatment: a row of teeth
+  // for the wide smile / talk poses, nothing otherwise. The family parameter
+  // is kept on the signature so future families can branch without changing
+  // call sites.
   const show: MouthStyle[] = ['bigSmile', 'talk_a', 'talk_e'];
   if (!show.includes(mouth)) return null;
   const cols = 5;

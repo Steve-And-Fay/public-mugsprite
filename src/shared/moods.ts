@@ -92,7 +92,7 @@ import { z } from 'zod';
 // ---------------------------------------------------------------------------
 
 export const EYE_FAMILIES = ['round', 'pixel', 'toon'] as const;
-export const MOUTH_FAMILIES = ['curve', 'pixel', 'toon'] as const;
+export const MOUTH_FAMILIES = ['curve', 'pixel'] as const;
 export const BROW_FAMILIES = ['default', 'bold'] as const;
 export const BODY_SHAPES = ['square', 'circle'] as const;
 export const GLASSES_FAMILIES = ['none', 'sunglasses', 'round', 'square'] as const;
@@ -111,7 +111,6 @@ export const EYE_FAMILY_LABELS: Record<EyeFamily, string> = {
 export const MOUTH_FAMILY_LABELS: Record<MouthFamily, string> = {
   curve: 'Curve',
   pixel: 'Pixel',
-  toon: 'Toon',
 };
 export const BROW_FAMILY_LABELS: Record<BrowFamily, string> = {
   default: 'Classic',

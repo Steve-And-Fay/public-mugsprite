@@ -75,71 +75,17 @@ const pixelMouthPaths: Record<MouthStyle, string> = {
   talk_u: 'M 460 710 L 540 710 L 540 770 L 460 770 Z',
 };
 
-// The "Toon" family — exaggerated cartoon-monster mouths. Wider openings,
-// more pronounced curves, deeper frowns. Pairs naturally with the ToonEye
-// family (heavy black outlines, large pupils) for a cohesive bold-cartoon
-// character.
-const toonMouthPaths: Record<MouthStyle, string> = {
-  // Cute closed smile arc — gentle upward curve, single thick stroke.
-  // The renderer fills this and the result reads as a friendly "u" smile.
-  gentleSmile: 'M 320 700 Q 500 800 680 700',
-  // Massive toothy grin, wider on the X and deeper on the Y.
-  bigSmile: 'M 200 680 Q 500 570 800 680 Q 500 980 200 680 Z',
-  // Dramatic curving frown with thick lower edge implied by the deeper dip.
-  frown: 'M 310 820 Q 500 660 690 820',
-  // Big shocked O.
-  openO: 'M 500 730 m -100 0 a 100 120 0 1 0 200 0 a 100 120 0 1 0 -200 0',
-  // Same tiny O — too small to exaggerate.
-  tinyO: 'M 500 720 m -28 0 a 28 32 0 1 0 56 0 a 28 32 0 1 0 -56 0',
-  // Thicker flat — implied lip-pressed-together via wider Y span.
-  flat: 'M 320 730 Q 500 745 680 730 Q 680 760 500 770 Q 320 760 320 730 Z',
-  // Smirk — closed asymmetric grin with a little body. Reads as "thinking".
-  smirk: 'M 360 720 Q 460 770 540 730 Q 600 700 640 740 Q 540 760 460 750 Q 380 740 360 720 Z',
-  // Tall sustained sing-pose, wider than curve family.
-  singO: 'M 500 690 Q 620 640 620 720 Q 620 870 500 870 Q 380 870 380 720 Q 380 640 500 690 Z',
-  // Bigger flatter wavy — closed thin ribbon. Reads as "confused".
-  wavy: 'M 280 720 Q 360 690 440 720 T 600 720 T 720 720 Q 720 745 600 745 T 440 745 T 280 745 Z',
-  // Tongue-out monster grin.
-  tongueOut: 'M 240 670 Q 500 600 760 670 Q 500 920 240 670 Z',
-  // Talk poses — exaggerated openings for stronger cadence reads.
-  talk_a: 'M 280 670 Q 500 600 720 670 Q 500 910 280 670 Z',
-  talk_e: 'M 270 720 Q 500 660 730 720 Q 500 820 270 720 Z',
-  talk_o: 'M 500 720 m -60 0 a 60 75 0 1 0 120 0 a 60 75 0 1 0 -120 0',
-  talk_m: 'M 360 730 Q 500 750 640 730 Q 640 750 500 760 Q 360 750 360 730 Z',
-  talk_i: 'M 300 725 Q 500 750 700 725 Q 700 750 500 765 Q 300 750 300 725 Z',
-  talk_u: 'M 500 730 m -42 0 a 42 52 0 1 0 84 0 a 42 52 0 1 0 -84 0',
-};
-
 // Public dispatcher. Falls back to "curve" for unknown families (defensive
 // against forward-compatible JSONB rows from a future family).
 export function mouthPathFor(family: MouthFamily, expression: MouthStyle): string {
-  const table =
-    family === 'pixel' ? pixelMouthPaths : family === 'toon' ? toonMouthPaths : curveMouthPaths;
+  const table = family === 'pixel' ? pixelMouthPaths : curveMouthPaths;
   return table[expression];
 }
 
-// Tongue path. Curve/Pixel families only render a tongue for "tongueOut".
-// The Toon family shows a soft pink lower lip / tongue across every wide-open
-// expression so the monster-mouth interior reads correctly.
-export function tonguePath(family: MouthFamily, expression: MouthStyle): string {
-  if (family === 'toon') {
-    switch (expression) {
-      case 'tongueOut':
-        return 'M 440 770 Q 430 880 510 890 Q 590 880 560 770 Z';
-      case 'bigSmile':
-        return 'M 290 850 Q 500 950 710 850 Q 500 920 290 850 Z';
-      case 'talk_a':
-        return 'M 320 830 Q 500 920 680 830 Q 500 900 320 830 Z';
-      case 'frown':
-        return 'M 360 800 Q 500 760 640 800 Q 500 830 360 800 Z';
-      case 'openO':
-        return 'M 440 800 Q 500 850 560 800 Q 500 830 440 800 Z';
-      case 'singO':
-        return 'M 460 820 Q 500 860 540 820 Q 500 850 460 820 Z';
-      default:
-        return '';
-    }
-  }
+// Tongue path. Both families render a tongue only for the "tongueOut" pose.
+// The family parameter is kept on the signature so future families can add
+// their own variants without changing call sites.
+export function tonguePath(_family: MouthFamily, expression: MouthStyle): string {
   return expression === 'tongueOut'
     ? 'M 470 770 Q 460 870 510 880 Q 560 870 540 770 Z'
     : '';
