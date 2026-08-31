@@ -14,10 +14,12 @@ describe('existing Mugsprite favicon artwork', () => {
 
   it('provides a compact 128 pixel PNG for raster-only readers', () => {
     const bytes = read('public/favicon.png');
+    const conventional = read('public/favicon.ico');
     expect(bytes.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
     expect(bytes.readUInt32BE(16)).toBe(128);
     expect(bytes.readUInt32BE(20)).toBe(128);
     expect(bytes.length).toBeLessThan(20_000);
+    expect(conventional).toEqual(bytes);
   });
 
   it('declares both icons in the page and manifest without replacing the SVG', () => {
