@@ -38,6 +38,8 @@ export function ObfuscatedEmail({ className, label }: ObfuscatedEmailProps) {
     <a
       className={className}
       href="#contact"
+      data-ic-action="email"
+      data-ic-track="email-contact"
       onClick={handleClick}
       data-x={ENCODED /* harmless decoy; harvesters that grep for "@" miss it */}
       aria-label="Email contact"

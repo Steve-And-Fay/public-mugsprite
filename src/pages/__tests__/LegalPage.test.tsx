@@ -42,6 +42,15 @@ describe('Privacy Page — regulator-facing disclosures', () => {
     expect(screen.getByText(/no cookies, no advertising trackers/i)).toBeInTheDocument();
     expect(screen.getByText(/no third-party analytics scripts/i)).toBeInTheDocument();
   });
+
+  it('distinguishes public-page portal analytics from private room activity', () => {
+    renderWithProviders(<PrivacyPage />);
+    expect(
+      screen.getByText(/room URLs, room contents, owner tokens, and admin pages are excluded/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Do Not Track or Global Privacy Control/i)).toBeInTheDocument();
+    expect(screen.getByText(/session-only identifier/i)).toBeInTheDocument();
+  });
 });
 
 describe('Terms Page — surface check', () => {

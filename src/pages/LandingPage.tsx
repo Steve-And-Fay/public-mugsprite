@@ -86,7 +86,7 @@ export default function LandingPage() {
         </div>
 
         {/* Primary action */}
-        <form onSubmit={handleCreate} className="space-y-4 max-w-xl mx-auto">
+        <form onSubmit={handleCreate} className="space-y-4 max-w-xl mx-auto" data-ic-track-ignore>
           <label className="flex items-start gap-3 text-sm cursor-pointer text-left">
             <input
               type="checkbox"

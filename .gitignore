@@ -11,3 +11,6 @@ test-results
 *.log
 
 *.tsbuildinfo
+
+# Managed at build time by the GitHub analytics installer.
+netlify/edge-functions/internet-crafters-analytics-*.js

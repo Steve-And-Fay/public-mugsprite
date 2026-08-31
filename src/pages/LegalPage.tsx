@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ObfuscatedEmail } from '../components/ObfuscatedEmail';
 
-const EFFECTIVE_DATE = '2026-05-18';
+const EFFECTIVE_DATE = '2026-08-30';
 
 interface LegalShellProps {
   title: string;
@@ -187,7 +187,7 @@ export function PrivacyPage() {
   return (
     <LegalShell title="PRIVACY POLICY">
       <Section heading="1. What We Collect From End Users">
-        <p>Mugsprite does not collect personal information from end users. Specifically:</p>
+        <p>Guest rooms do not require a name, email address, or account. We process the following information to operate the service:</p>
         <ul className="list-disc pl-6 space-y-1">
           <li>
             <strong>No email, no name, no account.</strong> Guest rooms run anonymously.
@@ -269,6 +269,31 @@ export function PrivacyPage() {
           without per-visitor information.
         </p>
       </Section>
+      <Section heading="5a. Public-page portal analytics">
+        <p>
+          Separately from Mugsprite's built-in product statistics, our Internet Crafters reporting
+          service measures the homepage, FAQ, sponsor, terms, and privacy pages. Room URLs, room
+          contents, owner tokens, and admin pages are excluded from this portal collection. Creating
+          a room is not counted as a contact-form conversion.
+        </p>
+        <p>
+          On those public pages, it records page paths, timestamps, page views, link and button
+          actions (including email-button use), campaign labels, and structural browser errors. A
+          session-only identifier and campaign labels may be kept in session storage. It does not
+          collect form answers, message text, full query strings, email addresses, phone numbers, or
+          raw advertising click IDs. An email-button event does not prove an email was sent, and
+          contact actions are not a count of unique people.
+        </p>
+        <p>
+          Do Not Track or Global Privacy Control switches this portal collector to anonymous,
+          minute-rounded page and generic action counts with no session storage, campaign
+          attribution, action details, or browser error reporting. Public-page crawler records
+          include request time, path, status, and user-agent classification; user-agent claims are
+          not verified crawler identity. The portal hashes source IP addresses, retains detailed
+          events for 90 days, and keeps historical aggregates and grouped issues longer. Its error
+          alerts are in-app notifications, not automatic emails or support tickets.
+        </p>
+      </Section>
       <Section heading="6. What We Don't Do">
         <p>
           We do not sell information. We do not run a mailing list. We do not use room
@@ -279,7 +304,8 @@ export function PrivacyPage() {
       <Section heading="7. Sharing With Infrastructure Providers">
         <p>
           We share data only with infrastructure providers strictly necessary to run the
-          Service (currently Netlify for hosting and Neon for the database). These providers
+          Service (currently Netlify for hosting, Neon for the database, and fortrabbit for the
+          Internet Crafters reporting portal). These providers
           act as processors under their own terms.
         </p>
       </Section>
