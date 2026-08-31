@@ -80,6 +80,9 @@ All four write to `agents` and append to `events` in one round-trip. The SSE pol
 
 ## Notes for future work
 
+The existing favicon has a raster companion for readers that do not accept SVG.
+See [the source and regeneration notes](docs/favicon.md).
+
 - **User accounts:** `rooms.owner_user_id` is nullable. Add a `users` table and start populating it when Netlify Identity is wired up — no migration needed for existing rooms.
 - **Token storage:** v2 should store hashed tokens. Generate raw → hash → store hash → return raw once.
 - **Event pruning:** add a scheduled function that trims `events` to the latest ~500 rows per room.
